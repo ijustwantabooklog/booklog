@@ -7,7 +7,7 @@ function StarRating({ value, onChange }) {
   return (
     <div style={{ display: "flex", gap: 2 }}>
       {[1,2,3,4,5].map((star) => (
-        <span key={star} onClick={() => onChange(star)}
+        <span key={star} onClick={() => onChange(star === value ? 0 : star)}
           onMouseEnter={() => setHovered(star)} onMouseLeave={() => setHovered(0)}
           style={{ fontSize: 22, cursor: "pointer", color: star <= (hovered || value) ? "#1a1a1a" : "#ccc", userSelect: "none" }}>
           {star <= (hovered || value) ? "★" : "☆"}
@@ -91,15 +91,13 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
     }, 500);
   }, [searchQuery]);
 
-  // Focus page input when quote row opens
   useEffect(() => {
     if (showQuoteInput && pageInputRef.current) pageInputRef.current.focus();
   }, [showQuoteInput]);
 
   const pickBook = (result) => {
     setForm(f => ({ ...f, title: result.title, author: result.author, year: result.year, coverUrl: result.coverUrl || "" }));
-    setShowResults(false);
-    setSearchQuery("");
+    setShowResults(false); setSearchQuery("");
   };
 
   const update = (key, val) => setForm(f => ({ ...f, [key]: val }));
@@ -214,70 +212,62 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
           </div>
         </div>
 
-        {/* currently reading toggle */}
+        {/* currently reading checkbox */}
         <div style={{ ...card, marginBottom: 10 }}>
           <div style={{ ...cardRow, cursor: "pointer" }} onClick={() => update("currentlyReading", !form.currentlyReading)}>
             <span style={cardLabel}>Currently reading</span>
             <div style={{
-              width: 36, height: 20, borderRadius: 10, background: form.currentlyReading ? "#e8318a" : "#ddd",
-              position: "relative", transition: "background 0.2s", flexShrink: 0,
+              width: 18, height: 18, borderRadius: 4, border: "1.5px solid",
+              borderColor: form.currentlyReading ? "#e8318a" : "#ccc",
+              background: form.currentlyReading ? "#e8318a" : "#fff",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
             }}>
-              <div style={{
-                width: 16, height: 16, borderRadius: "50%", background: "#fff",
-                position: "absolute", top: 2, left: form.currentlyReading ? 18 : 2,
-                transition: "left 0.2s",
-              }} />
+              {form.currentlyReading && <span style={{ color: "#fff", fontSize: 12, lineHeight: 1, marginTop: -1 }}>✓</span>}
             </div>
           </div>
         </div>
 
-        {/* date — hidden if currently reading */}
-        {!form.currentlyReading && (
-          <div style={{ ...card, position: "relative", marginBottom: 10 }}>
-            <div style={{ ...cardRow, cursor: "pointer" }} onClick={() => setShowCalendar(p => !p)}>
-              <span style={cardLabel}>Date</span>
-              <span style={{ fontSize: 14 }}>
-                <strong style={{ fontWeight: 500 }}>{form.dateRead === dateStr ? "Today" : form.dateRead}</strong>
-                {form.dateRead === dateStr && <span style={{ color: "#888", marginLeft: 6 }}>{dateStr}</span>}
-              </span>
-            </div>
-            {showCalendar && (
-              <div style={{ padding: "0 16px 16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <button onClick={() => setCalendarDate(new Date(yr, mo - 1, 1))} style={ghostBtn}>←</button>
-                  <span style={{ fontSize: 13, fontWeight: 500 }}>{MONTHS[mo]} {yr}</span>
-                  <button onClick={() => setCalendarDate(new Date(yr, mo + 1, 1))} style={ghostBtn}>→</button>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, textAlign: "center" }}>
-                  {["S","M","T","W","T","F","S"].map((d, i) => <div key={i} style={{ fontSize: 10, color: "#aaa", padding: "4px 0" }}>{d}</div>)}
-                  {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
-                  {Array.from({ length: daysInMonth }).map((_, i) => {
-                    const day = i + 1;
-                    const isToday = day === today.getDate() && mo === today.getMonth() && yr === today.getFullYear();
-                    return (
-                      <div key={day} onClick={() => selectDate(day)}
-                        style={{ fontSize: 13, padding: "5px 2px", borderRadius: 4, cursor: "pointer", background: isToday ? "#e8318a" : "none", color: isToday ? "#fff" : "#333", fontWeight: isToday ? 500 : 400 }}
-                        onMouseEnter={e => { if (!isToday) e.currentTarget.style.background = "#f0f0f0"; }}
-                        onMouseLeave={e => { if (!isToday) e.currentTarget.style.background = "none"; }}>
-                        {day}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+        {/* date — greyed out when currently reading */}
+        <div style={{ ...card, marginBottom: 10, opacity: form.currentlyReading ? 0.4 : 1, pointerEvents: form.currentlyReading ? "none" : "auto", position: "relative" }}>
+          <div style={{ ...cardRow, cursor: "pointer" }} onClick={() => setShowCalendar(p => !p)}>
+            <span style={cardLabel}>Date</span>
+            <span style={{ fontSize: 14 }}>
+              <strong style={{ fontWeight: 500 }}>{form.dateRead === dateStr ? "Today" : form.dateRead}</strong>
+              {form.dateRead === dateStr && <span style={{ color: "#888", marginLeft: 6 }}>{dateStr}</span>}
+            </span>
           </div>
-        )}
+          {showCalendar && (
+            <div style={{ padding: "0 16px 16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <button onClick={() => setCalendarDate(new Date(yr, mo - 1, 1))} style={ghostBtn}>←</button>
+                <span style={{ fontSize: 13, fontWeight: 500 }}>{MONTHS[mo]} {yr}</span>
+                <button onClick={() => setCalendarDate(new Date(yr, mo + 1, 1))} style={ghostBtn}>→</button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, textAlign: "center" }}>
+                {["S","M","T","W","T","F","S"].map((d, i) => <div key={i} style={{ fontSize: 10, color: "#aaa", padding: "4px 0" }}>{d}</div>)}
+                {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
+                {Array.from({ length: daysInMonth }).map((_, i) => {
+                  const day = i + 1;
+                  const isToday = day === today.getDate() && mo === today.getMonth() && yr === today.getFullYear();
+                  return (
+                    <div key={day} onClick={() => selectDate(day)}
+                      style={{ fontSize: 13, padding: "5px 2px", borderRadius: 4, cursor: "pointer", background: isToday ? "#e8318a" : "none", color: isToday ? "#fff" : "#333", fontWeight: isToday ? 500 : 400 }}
+                      onMouseEnter={e => { if (!isToday) e.currentTarget.style.background = "#f0f0f0"; }}
+                      onMouseLeave={e => { if (!isToday) e.currentTarget.style.background = "none"; }}>
+                      {day}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* rate / shelves / tags / notes */}
-        <div style={{ ...card, marginTop: 0 }}>
+        <div style={{ ...card }}>
           <div style={cardRow}>
             <span style={cardLabel}>Rate</span>
-            {form.rating === 0 ? (
-              <span style={{ fontSize: 13, color: "#bbb", cursor: "pointer" }} onClick={() => update("rating", 1)}>tap to rate</span>
-            ) : (
-              <StarRating value={form.rating} onChange={v => update("rating", v === form.rating ? 0 : v)} />
-            )}
+            <StarRating value={form.rating} onChange={v => update("rating", v)} />
           </div>
 
           {/* Shelves */}
@@ -289,16 +279,15 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
                     {form.shelves.map(s => (
                       <span key={s} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#1a1a1a", color: "#fff", borderRadius: 20, padding: "3px 10px", fontSize: 12 }}>
-                        {s}
-                        <span onClick={() => removeShelf(s)} style={{ cursor: "pointer", opacity: 0.6, fontSize: 14, lineHeight: 1 }}>×</span>
+                        {s}<span onClick={() => removeShelf(s)} style={{ cursor: "pointer", opacity: 0.6, fontSize: 14, lineHeight: 1 }}>×</span>
                       </span>
                     ))}
                   </div>
                 )}
                 <input value={shelfInput} onChange={e => setShelfInput(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addShelf(); } }}
-                  placeholder=""
-                  style={{ ...bareInput, fontSize: 14, width: "100%" }} />
+                  placeholder="Favourites"
+                  style={{ ...bareInput, fontSize: 14, width: "100%", color: shelfInput ? "#1a1a1a" : "#bbb" }} />
                 {shelfSuggestions.length > 0 && (
                   <div style={{ position: "absolute", left: 88, right: 16, zIndex: 50, background: "#fff", border: "1px solid #e0e0e0", borderRadius: 6, marginTop: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
                     {shelfSuggestions.map(s => (
@@ -330,8 +319,8 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
                   </div>
                 )}
                 <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={addTag}
-                  placeholder=""
-                  style={{ ...bareInput, fontSize: 14, width: "100%" }} />
+                  placeholder="Literary Fiction"
+                  style={{ ...bareInput, fontSize: 14, width: "100%", color: tagInput ? "#1a1a1a" : "#bbb" }} />
               </div>
             </div>
           </div>
@@ -356,23 +345,15 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
           ))}
           {showQuoteInput && (
             <div style={{ borderTop: form.quotes.length > 0 ? "1px solid #e8e8e8" : "none", padding: "12px 16px 4px", display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <input
-                ref={pageInputRef}
-                value={newQuotePage}
-                onChange={e => setNewQuotePage(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); document.getElementById("quote-text-input")?.focus(); } }}
+              <input ref={pageInputRef} value={newQuotePage} onChange={e => setNewQuotePage(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); document.getElementById("quote-text")?.focus(); } }}
                 placeholder="pg"
-                style={{ ...bareInput, width: 48, flexShrink: 0, color: "#e8318a", fontSize: 14 }}
-              />
-              <textarea
-                id="quote-text-input"
-                value={newQuoteText}
-                onChange={e => setNewQuoteText(e.target.value)}
+                style={{ ...bareInput, width: 48, flexShrink: 0, color: "#e8318a", fontSize: 14 }} />
+              <textarea id="quote-text" value={newQuoteText} onChange={e => setNewQuoteText(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addQuote(); } }}
-                placeholder="Quote text... (Enter to save)"
+                placeholder="Quote"
                 rows={2}
-                style={{ ...bareInput, flex: 1, resize: "none", lineHeight: 1.5, fontSize: 14 }}
-              />
+                style={{ ...bareInput, flex: 1, resize: "none", lineHeight: 1.5, fontSize: 14 }} />
             </div>
           )}
           <button onClick={() => setShowQuoteInput(true)} style={{ background: "none", border: "none", color: "#aaa", fontSize: 13, padding: "10px 16px", display: "block", width: "100%", textAlign: "left", cursor: "pointer" }}>
