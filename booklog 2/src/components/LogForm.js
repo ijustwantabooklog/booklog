@@ -1,19 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
-import { collection, addDoc, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, serverTimestamp, onSnapshot, query, orderBy } from "firebase/firestore";
 
 function StarRating({ value, onChange }) {
   const [hovered, setHovered] = useState(0);
   return (
     <div style={{ display: "flex", gap: 2 }}>
       {[1,2,3,4,5].map((star) => (
-        <span
-          key={star}
-          onClick={() => onChange(star)}
-          onMouseEnter={() => setHovered(star)}
-          onMouseLeave={() => setHovered(0)}
-          style={{ fontSize: 22, cursor: "pointer", color: star <= (hovered || value) ? "#1a1a1a" : "#ccc", userSelect: "none" }}
-        >
+        <span key={star} onClick={() => onChange(star)}
+          onMouseEnter={() => setHovered(star)} onMouseLeave={() => setHovered(0)}
+          style={{ fontSize: 22, cursor: "pointer", color: star <= (hovered || value) ? "#1a1a1a" : "#ccc", userSelect: "none" }}>
           {star <= (hovered || value) ? "★" : "☆"}
         </span>
       ))}
@@ -27,14 +23,7 @@ async function searchGoogleBooks(query) {
   return (data.items || []).map(item => {
     const info = item.volumeInfo;
     const cover = info.imageLinks?.thumbnail?.replace("http://", "https://") || null;
-    const authors = info.authors || [];
-    return {
-      title: info.title || "",
-      author: authors[0] || "",
-      year: info.publishedDate?.slice(0, 4) || "",
-      coverUrl: cover,
-      googleId: item.id,
-    };
+    return { title: info.title || "", author: (info.authors || [])[0] || "", year: info.publishedDate?.slice(0, 4) || "", coverUrl: cover, googleId: item.id };
   });
 }
 
@@ -48,9 +37,9 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
     translator: book?.translator || "",
     year: book?.year || "",
     rating: book?.rating || 0,
-    shelf: book?.shelf || "",
-    tags: book?.tags?.join(", ") || "",
-    review: book?.review || "",
+    shelves: book?.shelves || (book?.shelf ? [book.shelf] : []),
+    tags: book?.tags || [],
+    notes: book?.notes || book?.review || "",
     quotes: book?.quotes || [],
     dateRead: book?.dateRead || dateStr,
     coverUrl: book?.coverUrl || "",
@@ -60,12 +49,43 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+
+  // shelf input
+  const [shelfInput, setShelfInput] = useState("");
+  const [shelfSuggestions, setShelfSuggestions] = useState([]);
+  const [existingShelves, setExistingShelves] = useState([]);
+
+  // tag input
+  const [tagInput, setTagInput] = useState("");
+
   const [newQuotePage, setNewQuotePage] = useState("");
   const [newQuoteText, setNewQuoteText] = useState("");
   const [showQuoteInput, setShowQuoteInput] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarDate, setCalendarDate] = useState(today);
+
   const searchTimeout = useRef(null);
 
+  // Load existing shelves from user's books
+  useEffect(() => {
+    const q = query(collection(db, "users", userId, "books"), orderBy("createdAt", "desc"));
+    return onSnapshot(q, (snap) => {
+      const allShelves = snap.docs.flatMap(d => d.data().shelves || (d.data().shelf ? [d.data().shelf] : []));
+      setExistingShelves([...new Set(allShelves)]);
+    });
+  }, [userId]);
+
+  // Shelf autocomplete
+  useEffect(() => {
+    if (!shelfInput.trim()) { setShelfSuggestions([]); return; }
+    const matches = existingShelves.filter(s =>
+      s.toLowerCase().startsWith(shelfInput.toLowerCase()) && !form.shelves.includes(s)
+    );
+    setShelfSuggestions(matches);
+  }, [shelfInput, existingShelves, form.shelves]);
+
+  // Book search
   useEffect(() => {
     if (!searchQuery.trim()) { setSearchResults([]); setShowResults(false); return; }
     clearTimeout(searchTimeout.current);
@@ -86,6 +106,28 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
 
   const update = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
+  // Add shelf on enter or suggestion click
+  const addShelf = (name) => {
+    const trimmed = (name || shelfInput).trim();
+    if (!trimmed || form.shelves.includes(trimmed)) { setShelfInput(""); setShelfSuggestions([]); return; }
+    update("shelves", [...form.shelves, trimmed]);
+    setShelfInput("");
+    setShelfSuggestions([]);
+  };
+
+  const removeShelf = (s) => update("shelves", form.shelves.filter(x => x !== s));
+
+  // Add tag on enter
+  const addTag = (e) => {
+    if (e.key === "Enter" && tagInput.trim()) {
+      const cleaned = tagInput.trim().replace(/^#/, "");
+      if (!form.tags.includes(cleaned)) update("tags", [...form.tags, cleaned]);
+      setTagInput("");
+    }
+  };
+
+  const removeTag = (t) => update("tags", form.tags.filter(x => x !== t));
+
   const addQuote = () => {
     if (!newQuoteText.trim()) return;
     update("quotes", [...form.quotes, { page: newQuotePage, text: newQuoteText.trim() }]);
@@ -94,12 +136,24 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
 
   const removeQuote = (i) => update("quotes", form.quotes.filter((_, idx) => idx !== i));
 
+  // Calendar helpers
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
+  const getFirstDay = (y, m) => new Date(y, m, 1).getDay();
+
+  const selectDate = (day) => {
+    const d = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day);
+    const str = d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    update("dateRead", str);
+    setShowCalendar(false);
+  };
+
   const handleSave = async () => {
     if (!form.title.trim()) return;
     setSaving(true);
     const data = {
       ...form,
-      tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
+      shelf: form.shelves[0] || "",
       updatedAt: serverTimestamp(),
     };
     try {
@@ -117,6 +171,11 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
     }
   };
 
+  const yr = calendarDate.getFullYear();
+  const mo = calendarDate.getMonth();
+  const daysInMonth = getDaysInMonth(yr, mo);
+  const firstDay = getFirstDay(yr, mo);
+
   return (
     <div style={{ background: "#f4f4f4", minHeight: "100vh" }}>
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 16px 60px" }}>
@@ -124,40 +183,24 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
         {/* header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0 16px" }}>
           <button onClick={onCancel} style={ghostBtn}>Cancel</button>
-          <button onClick={handleSave} disabled={saving} style={{
-            background: "#e8318a", color: "#fff", border: "none", borderRadius: 6,
-            padding: "8px 20px", fontSize: 13, fontWeight: 500, opacity: saving ? 0.7 : 1,
-          }}>
+          <button onClick={handleSave} disabled={saving} style={{ background: "#e8318a", color: "#fff", border: "none", borderRadius: 6, padding: "8px 20px", fontSize: 13, fontWeight: 500, cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
             {saving ? "Saving..." : "Log it"}
           </button>
         </div>
 
         {/* book search */}
         <div style={{ position: "relative", marginBottom: 20 }}>
-          <input
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+          <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search for a book by title or author..."
-            style={{
-              width: "100%", padding: "10px 14px", fontSize: 14, border: "1px solid #e0e0e0",
-              borderRadius: 8, background: "#fff", outline: "none",
-            }}
-          />
+            style={{ width: "100%", padding: "10px 14px", fontSize: 14, border: "1px solid #e0e0e0", borderRadius: 8, background: "#fff", outline: "none" }} />
           {searching && <span style={{ position: "absolute", right: 12, top: 10, fontSize: 12, color: "#aaa" }}>searching...</span>}
           {showResults && searchResults.length > 0 && (
-            <div style={{
-              position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
-              background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8,
-              marginTop: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden",
-            }}>
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100, background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8, marginTop: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
               {searchResults.map((r, i) => (
-                <div
-                  key={i}
-                  onClick={() => pickBook(r)}
+                <div key={i} onClick={() => pickBook(r)}
                   style={{ display: "flex", gap: 12, padding: "10px 14px", cursor: "pointer", borderTop: i > 0 ? "1px solid #f5f5f5" : "none" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
-                  onMouseLeave={e => e.currentTarget.style.background = "#fff"}
-                >
+                  onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
                   {r.coverUrl ? (
                     <img src={r.coverUrl} alt={r.title} style={{ width: 32, height: 46, objectFit: "cover", borderRadius: 2, flexShrink: 0 }} />
                   ) : (
@@ -192,37 +235,115 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
           </div>
         </div>
 
-        {/* date */}
-        <div style={card}>
-          <div style={cardRow}>
+        {/* date — with calendar */}
+        <div style={{ ...card, position: "relative" }}>
+          <div style={{ ...cardRow, cursor: "pointer" }} onClick={() => setShowCalendar(p => !p)}>
             <span style={cardLabel}>Date</span>
             <span style={{ fontSize: 14 }}>
-              <strong style={{ fontWeight: 500 }}>Today</strong>
-              <span style={{ color: "#888", marginLeft: 6 }}>{dateStr}</span>
+              <strong style={{ fontWeight: 500 }}>{form.dateRead === dateStr ? "Today" : form.dateRead}</strong>
+              {form.dateRead === dateStr && <span style={{ color: "#888", marginLeft: 6 }}>{dateStr}</span>}
             </span>
           </div>
+          {showCalendar && (
+            <div style={{ padding: "0 16px 16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <button onClick={() => setCalendarDate(new Date(yr, mo - 1, 1))} style={ghostBtn}>←</button>
+                <span style={{ fontSize: 13, fontWeight: 500 }}>{MONTHS[mo]} {yr}</span>
+                <button onClick={() => setCalendarDate(new Date(yr, mo + 1, 1))} style={ghostBtn}>→</button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, textAlign: "center" }}>
+                {["S","M","T","W","T","F","S"].map((d, i) => (
+                  <div key={i} style={{ fontSize: 10, color: "#aaa", padding: "4px 0" }}>{d}</div>
+                ))}
+                {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
+                {Array.from({ length: daysInMonth }).map((_, i) => {
+                  const day = i + 1;
+                  const isToday = day === today.getDate() && mo === today.getMonth() && yr === today.getFullYear();
+                  return (
+                    <div key={day} onClick={() => selectDate(day)}
+                      style={{ fontSize: 13, padding: "5px 2px", borderRadius: 4, cursor: "pointer",
+                        background: isToday ? "#e8318a" : "none", color: isToday ? "#fff" : "#333",
+                        fontWeight: isToday ? 500 : 400 }}
+                      onMouseEnter={e => { if (!isToday) e.currentTarget.style.background = "#f0f0f0"; }}
+                      onMouseLeave={e => { if (!isToday) e.currentTarget.style.background = "none"; }}>
+                      {day}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* rate / shelf / tags / review */}
+        {/* rate / shelves / tags / notes */}
         <div style={{ ...card, marginTop: 10 }}>
           <div style={cardRow}>
             <span style={cardLabel}>Rate</span>
             <StarRating value={form.rating} onChange={v => update("rating", v)} />
           </div>
-          <div style={{ ...cardRow, borderTop: "1px solid #e8e8e8" }}>
-            <span style={cardLabel}>Shelves</span>
-            <input value={form.shelf} onChange={e => update("shelf", e.target.value)}
-              placeholder="e.g. Dissertation" style={{ ...bareInput, flex: 1, fontSize: 14 }} />
+
+          {/* Shelves */}
+          <div style={{ borderTop: "1px solid #e8e8e8", padding: "12px 16px", position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+              <span style={{ ...cardLabel, paddingTop: form.shelves.length > 0 ? 6 : 0 }}>Shelves</span>
+              <div style={{ flex: 1 }}>
+                {form.shelves.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                    {form.shelves.map(s => (
+                      <span key={s} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#1a1a1a", color: "#fff", borderRadius: 20, padding: "3px 10px", fontSize: 12 }}>
+                        {s}
+                        <span onClick={() => removeShelf(s)} style={{ cursor: "pointer", opacity: 0.6, fontSize: 14, lineHeight: 1 }}>×</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <input value={shelfInput} onChange={e => setShelfInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addShelf(); } }}
+                  placeholder="Type a shelf name, press Enter..."
+                  style={{ ...bareInput, fontSize: 14, width: "100%" }} />
+                {shelfSuggestions.length > 0 && (
+                  <div style={{ position: "absolute", left: 88, right: 16, zIndex: 50, background: "#fff", border: "1px solid #e0e0e0", borderRadius: 6, marginTop: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+                    {shelfSuggestions.map(s => (
+                      <div key={s} onClick={() => addShelf(s)}
+                        style={{ padding: "8px 12px", fontSize: 13, cursor: "pointer", color: "#333" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
+                        onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+                        {s}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-          <div style={{ ...cardRow, borderTop: "1px solid #e8e8e8" }}>
-            <span style={cardLabel}>Tags</span>
-            <input value={form.tags} onChange={e => update("tags", e.target.value)}
-              placeholder="#FeministLiterature, #Theory..." style={{ ...bareInput, flex: 1, fontSize: 14 }} />
+
+          {/* Tags */}
+          <div style={{ borderTop: "1px solid #e8e8e8", padding: "12px 16px" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+              <span style={{ ...cardLabel, paddingTop: form.tags.length > 0 ? 6 : 0 }}>Tags</span>
+              <div style={{ flex: 1 }}>
+                {form.tags.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                    {form.tags.map(t => (
+                      <span key={t} style={{ fontSize: 13, color: "#555", fontFamily: "Georgia, serif", fontStyle: "italic" }}>
+                        #{t}
+                        <span onClick={() => removeTag(t)} style={{ marginLeft: 4, cursor: "pointer", color: "#ccc", fontStyle: "normal", fontFamily: "inherit" }}>×</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={addTag}
+                  placeholder="#FeministLiterature, press Enter to add..."
+                  style={{ ...bareInput, fontSize: 14, width: "100%" }} />
+              </div>
+            </div>
           </div>
+
+          {/* Notes */}
           <div style={{ ...cardRow, borderTop: "1px solid #e8e8e8", alignItems: "flex-start" }}>
-            <span style={{ ...cardLabel, paddingTop: 2 }}>Review</span>
-            <textarea value={form.review} onChange={e => update("review", e.target.value)}
-              placeholder="Write a review..." rows={3}
+            <span style={{ ...cardLabel, paddingTop: 2 }}>Notes</span>
+            <textarea value={form.notes} onChange={e => update("notes", e.target.value)}
+              placeholder="Write notes..." rows={3}
               style={{ ...bareInput, flex: 1, fontSize: 14, resize: "vertical", lineHeight: 1.5 }} />
           </div>
         </div>
@@ -233,28 +354,20 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
             <div key={i} style={{ ...cardRow, borderTop: i === 0 ? "none" : "1px solid #e8e8e8", alignItems: "flex-start", gap: 16 }}>
               <span style={{ fontSize: 14, color: "#e8318a", minWidth: 40, paddingTop: 2 }}>{q.page || "—"}</span>
               <span style={{ fontSize: 14, color: "#333", flex: 1, lineHeight: 1.5 }}>{q.text}</span>
-              <button onClick={() => removeQuote(i)} style={{ background: "none", border: "none", color: "#ccc", fontSize: 16, padding: 0 }}>×</button>
+              <button onClick={() => removeQuote(i)} style={{ background: "none", border: "none", color: "#ccc", fontSize: 16, padding: 0, cursor: "pointer" }}>×</button>
             </div>
           ))}
-
           {showQuoteInput && (
             <div style={{ borderTop: form.quotes.length > 0 ? "1px solid #e8e8e8" : "none", padding: "12px 16px 4px", display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <input value={newQuotePage} onChange={e => setNewQuotePage(e.target.value)}
-                placeholder="pg" style={{ ...bareInput, width: 48, flexShrink: 0, color: "#e8318a", fontSize: 14 }} />
+              <input value={newQuotePage} onChange={e => setNewQuotePage(e.target.value)} placeholder="pg"
+                style={{ ...bareInput, width: 48, flexShrink: 0, color: "#e8318a", fontSize: 14 }} />
               <textarea value={newQuoteText} onChange={e => setNewQuoteText(e.target.value)}
                 placeholder="Quote text..." rows={2} autoFocus
                 style={{ ...bareInput, flex: 1, resize: "none", lineHeight: 1.5, fontSize: 14 }} />
-              <button onClick={addQuote} style={{
-                background: "#1a1a1a", color: "#fff", border: "none", borderRadius: 5,
-                padding: "6px 12px", fontSize: 12, marginTop: 2,
-              }}>add</button>
+              <button onClick={addQuote} style={{ background: "#1a1a1a", color: "#fff", border: "none", borderRadius: 5, padding: "6px 12px", fontSize: 12, cursor: "pointer", marginTop: 2 }}>add</button>
             </div>
           )}
-
-          <button onClick={() => setShowQuoteInput(true)} style={{
-            background: "none", border: "none", color: "#aaa", fontSize: 13,
-            padding: "10px 16px 10px", display: "block", width: "100%", textAlign: "left",
-          }}>
+          <button onClick={() => setShowQuoteInput(true)} style={{ background: "none", border: "none", color: "#aaa", fontSize: 13, padding: "10px 16px", display: "block", width: "100%", textAlign: "left", cursor: "pointer" }}>
             + add quote
           </button>
         </div>
@@ -265,7 +378,7 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
 }
 
 const ghostBtn = { background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: 13 };
-const card = { background: "#fff", borderRadius: 10, border: "1px solid #e2e2e2", overflow: "hidden" };
+const card = { background: "#fff", borderRadius: 10, border: "1px solid #e2e2e2", overflow: "visible" };
 const cardRow = { display: "flex", alignItems: "center", gap: 16, padding: "12px 16px" };
 const cardLabel = { fontSize: 14, color: "#555", minWidth: 72, flexShrink: 0 };
 const bareInput = { background: "none", border: "none", outline: "none", fontFamily: "inherit", padding: 0 };
