@@ -10,7 +10,14 @@ function StarDisplay({ value, size = 14 }) {
   );
 }
 
-export default function BookList({ userId, userName, onSelect, onNew, onSignOut, hideHeader }) {
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return dateStr;
+  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
+export default function BookList({ userId, onSelect }) {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeShelf, setActiveShelf] = useState(null);
@@ -26,8 +33,10 @@ export default function BookList({ userId, userName, onSelect, onNew, onSignOut,
 
   const shelves = [...new Set(books.map(b => b.shelf).filter(Boolean))].sort();
   const tags = [...new Set(books.flatMap(b => b.tags || []).filter(Boolean))].sort();
+  const currentlyReading = books.filter(b => b.currentlyReading);
+  const finished = books.filter(b => !b.currentlyReading);
 
-  const filtered = books.filter(b => {
+  const filtered = finished.filter(b => {
     if (activeShelf && b.shelf !== activeShelf) return false;
     if (activeTag && !(b.tags || []).includes(activeTag)) return false;
     return true;
@@ -37,32 +46,60 @@ export default function BookList({ userId, userName, onSelect, onNew, onSignOut,
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px 60px" }}>
       <div style={{ display: "flex", gap: 48, alignItems: "flex-start", marginTop: 24 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          {loading && <p style={{ color: "#aaa", fontSize: 14, padding: "20px 0" }}>loading...</p>}
-          {!loading && filtered.length === 0 && (
-            <div style={{ padding: "40px 0", color: "#aaa" }}>
-              <p style={{ fontSize: 14 }}>{books.length === 0 ? 'no books yet — tap "Log it" to add your first' : "no books match this filter"}</p>
+
+          {/* Currently reading section */}
+          {currentlyReading.length > 0 && (
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.8px", textTransform: "uppercase", color: "#aaa", marginBottom: 12 }}>Currently reading</div>
+              {currentlyReading.map(book => (
+                <div key={book.id} onClick={() => onSelect(book.id)}
+                  style={{ display: "flex", gap: 16, padding: "12px 0", borderBottom: "1px solid #f0f0f0", cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                  {book.coverUrl ? <img src={book.coverUrl} alt={book.title} style={{ width: 40, height: 58, objectFit: "cover", borderRadius: 2, flexShrink: 0 }} />
+                    : <div style={{ width: 40, height: 58, background: "#e0e0e0", borderRadius: 2, flexShrink: 0 }} />}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: "Georgia, serif", fontSize: 15, color: "#1a1a1a" }}>{book.title}</div>
+                    <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{book.author}</div>
+                  </div>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#e8318a", marginTop: 6, flexShrink: 0 }} />
+                </div>
+              ))}
             </div>
           )}
+
+          {loading && <p style={{ color: "#aaa", fontSize: 14, padding: "20px 0" }}>loading...</p>}
+
+          {!loading && filtered.length === 0 && books.length === 0 && (
+            <p style={{ fontSize: 14, color: "#aaa", padding: "40px 0" }}>no books yet — tap "Log it" to add your first</p>
+          )}
+
           {filtered.map((book) => (
             <div key={book.id} onClick={() => onSelect(book.id)}
-              style={{ display: "flex", gap: 20, padding: "20px 0", borderBottom: "1px solid #f0f0f0", cursor: "pointer" }}
+              style={{ display: "flex", gap: 16, padding: "14px 0", borderBottom: "1px solid #f0f0f0", cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
               onMouseLeave={e => e.currentTarget.style.background = "none"}>
-              {book.coverUrl ? (
-                <img src={book.coverUrl} alt={book.title} style={{ width: 52, height: 74, objectFit: "cover", borderRadius: 3, flexShrink: 0 }} />
-              ) : (
-                <div style={{ width: 52, height: 74, background: "#e0e0e0", borderRadius: 3, flexShrink: 0 }} />
-              )}
+
+              {/* Date first */}
+              <div style={{ minWidth: 80, flexShrink: 0 }}>
+                <div style={{ fontSize: 11, color: "#bbb" }}>{formatDate(book.dateRead)}</div>
+              </div>
+
+              {/* Cover */}
+              {book.coverUrl ? <img src={book.coverUrl} alt={book.title} style={{ width: 36, height: 52, objectFit: "cover", borderRadius: 2, flexShrink: 0 }} />
+                : <div style={{ width: 36, height: 52, background: "#e0e0e0", borderRadius: 2, flexShrink: 0 }} />}
+
+              {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: "Georgia, serif", fontSize: 17, marginBottom: 3, color: "#1a1a1a" }}>{book.title}</div>
-                <div style={{ fontSize: 13, color: "#666", marginBottom: 6 }}>{book.author}{book.translator ? `, trans. ${book.translator}` : ""}</div>
-                <StarDisplay value={book.rating} size={14} />
-                <div style={{ fontSize: 12, color: "#aaa", marginTop: 5 }}>read {book.dateRead}</div>
+                <div style={{ fontFamily: "Georgia, serif", fontSize: 15, color: "#1a1a1a", marginBottom: 2 }}>{book.title}</div>
+                <div style={{ fontSize: 12, color: "#888" }}>{book.author}{book.translator ? `, trans. ${book.translator}` : ""}</div>
+                {book.rating > 0 && <div style={{ marginTop: 4 }}><StarDisplay value={book.rating} size={12} /></div>}
               </div>
             </div>
           ))}
         </div>
 
+        {/* Sidebar */}
         {(shelves.length > 0 || tags.length > 0) && (
           <div style={{ width: 160, flexShrink: 0, paddingTop: 4 }}>
             {shelves.length > 0 && (
