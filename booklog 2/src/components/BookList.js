@@ -10,7 +10,7 @@ function StarDisplay({ value, size = 14 }) {
   );
 }
 
-export default function BookList({ userId, userName, onSelect, onNew, onSignOut }) {
+export default function BookList({ userId, userName, onSelect, onNew, onSignOut, hideHeader }) {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeShelf, setActiveShelf] = useState(null);
@@ -24,7 +24,6 @@ export default function BookList({ userId, userName, onSelect, onNew, onSignOut 
     });
   }, [userId]);
 
-  const firstName = userName?.split(" ")[0]?.toLowerCase() || "jenny";
   const shelves = [...new Set(books.map(b => b.shelf).filter(Boolean))].sort();
   const tags = [...new Set(books.flatMap(b => b.tags || []).filter(Boolean))].sort();
 
@@ -36,15 +35,7 @@ export default function BookList({ userId, userName, onSelect, onNew, onSignOut 
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px 60px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "32px 0 24px", borderBottom: "1px solid #e8e8e8", marginBottom: 8 }}>
-        <span style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 400 }}>{firstName}/</span>
-        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-          <button onClick={onSignOut} style={{ background: "none", border: "none", color: "#bbb", fontSize: 12, cursor: "pointer" }}>sign out</button>
-          <button onClick={onNew} style={{ background: "#e8318a", color: "#fff", border: "none", borderRadius: 6, padding: "7px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Log it</button>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", gap: 48, alignItems: "flex-start" }}>
+      <div style={{ display: "flex", gap: 48, alignItems: "flex-start", marginTop: 24 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           {loading && <p style={{ color: "#aaa", fontSize: 14, padding: "20px 0" }}>loading...</p>}
           {!loading && filtered.length === 0 && (
@@ -53,7 +44,10 @@ export default function BookList({ userId, userName, onSelect, onNew, onSignOut 
             </div>
           )}
           {filtered.map((book) => (
-            <div key={book.id} onClick={() => onSelect(book.id)} style={{ display: "flex", gap: 20, padding: "20px 0", borderBottom: "1px solid #f0f0f0", cursor: "pointer" }}>
+            <div key={book.id} onClick={() => onSelect(book.id)}
+              style={{ display: "flex", gap: 20, padding: "20px 0", borderBottom: "1px solid #f0f0f0", cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
+              onMouseLeave={e => e.currentTarget.style.background = "none"}>
               {book.coverUrl ? (
                 <img src={book.coverUrl} alt={book.title} style={{ width: 52, height: 74, objectFit: "cover", borderRadius: 3, flexShrink: 0 }} />
               ) : (
@@ -70,7 +64,7 @@ export default function BookList({ userId, userName, onSelect, onNew, onSignOut 
         </div>
 
         {(shelves.length > 0 || tags.length > 0) && (
-          <div style={{ width: 160, flexShrink: 0, paddingTop: 20 }}>
+          <div style={{ width: 160, flexShrink: 0, paddingTop: 4 }}>
             {shelves.length > 0 && (
               <div style={{ marginBottom: 28 }}>
                 <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.8px", textTransform: "uppercase", color: "#aaa", marginBottom: 10 }}>Shelves</div>
