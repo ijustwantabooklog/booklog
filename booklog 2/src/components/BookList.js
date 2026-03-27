@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 
-function StarDisplay({ value, size = 14 }) {
+function StarDisplay({ value, size = 12 }) {
   return (
     <span style={{ fontSize: size, letterSpacing: 1, color: "#1a1a1a" }}>
       {[1,2,3,4,5].map(s => s <= value ? "★" : "☆").join("")}
@@ -15,6 +15,14 @@ function formatDate(dateStr) {
   const d = new Date(dateStr);
   if (isNaN(d)) return dateStr;
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
+function SectionHeading({ children }) {
+  return (
+    <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.8px", textTransform: "uppercase", color: "#aaa", marginBottom: 12 }}>
+      {children}
+    </div>
+  );
 }
 
 export default function BookList({ userId, onSelect }) {
@@ -47,17 +55,18 @@ export default function BookList({ userId, onSelect }) {
       <div style={{ display: "flex", gap: 48, alignItems: "flex-start", marginTop: 24 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
 
-          {/* Currently reading section */}
+          {/* Currently reading */}
           {currentlyReading.length > 0 && (
-            <div style={{ marginBottom: 32 }}>
-              <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.8px", textTransform: "uppercase", color: "#aaa", marginBottom: 12 }}>Currently reading</div>
+            <div style={{ marginBottom: 36 }}>
+              <SectionHeading>Currently reading</SectionHeading>
               {currentlyReading.map(book => (
                 <div key={book.id} onClick={() => onSelect(book.id)}
                   style={{ display: "flex", gap: 16, padding: "12px 0", borderBottom: "1px solid #f0f0f0", cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
                   onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                  {book.coverUrl ? <img src={book.coverUrl} alt={book.title} style={{ width: 40, height: 58, objectFit: "cover", borderRadius: 2, flexShrink: 0 }} />
-                    : <div style={{ width: 40, height: 58, background: "#e0e0e0", borderRadius: 2, flexShrink: 0 }} />}
+                  {book.coverUrl
+                    ? <img src={book.coverUrl} alt={book.title} style={{ width: 36, height: 52, objectFit: "cover", borderRadius: 2, flexShrink: 0 }} />
+                    : <div style={{ width: 36, height: 52, background: "#e0e0e0", borderRadius: 2, flexShrink: 0 }} />}
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: "Georgia, serif", fontSize: 15, color: "#1a1a1a" }}>{book.title}</div>
                     <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{book.author}</div>
@@ -68,9 +77,12 @@ export default function BookList({ userId, onSelect }) {
             </div>
           )}
 
+          {/* Activity */}
+          {!loading && filtered.length > 0 && <SectionHeading>Activity</SectionHeading>}
+
           {loading && <p style={{ color: "#aaa", fontSize: 14, padding: "20px 0" }}>loading...</p>}
 
-          {!loading && filtered.length === 0 && books.length === 0 && (
+          {!loading && books.length === 0 && (
             <p style={{ fontSize: 14, color: "#aaa", padding: "40px 0" }}>no books yet — tap "Log it" to add your first</p>
           )}
 
@@ -79,17 +91,12 @@ export default function BookList({ userId, onSelect }) {
               style={{ display: "flex", gap: 16, padding: "14px 0", borderBottom: "1px solid #f0f0f0", cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
               onMouseLeave={e => e.currentTarget.style.background = "none"}>
-
-              {/* Date first */}
-              <div style={{ minWidth: 80, flexShrink: 0 }}>
+              <div style={{ minWidth: 100, flexShrink: 0 }}>
                 <div style={{ fontSize: 11, color: "#bbb" }}>{formatDate(book.dateRead)}</div>
               </div>
-
-              {/* Cover */}
-              {book.coverUrl ? <img src={book.coverUrl} alt={book.title} style={{ width: 36, height: 52, objectFit: "cover", borderRadius: 2, flexShrink: 0 }} />
+              {book.coverUrl
+                ? <img src={book.coverUrl} alt={book.title} style={{ width: 36, height: 52, objectFit: "cover", borderRadius: 2, flexShrink: 0 }} />
                 : <div style={{ width: 36, height: 52, background: "#e0e0e0", borderRadius: 2, flexShrink: 0 }} />}
-
-              {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: "Georgia, serif", fontSize: 15, color: "#1a1a1a", marginBottom: 2 }}>{book.title}</div>
                 <div style={{ fontSize: 12, color: "#888" }}>{book.author}{book.translator ? `, trans. ${book.translator}` : ""}</div>
@@ -104,7 +111,7 @@ export default function BookList({ userId, onSelect }) {
           <div style={{ width: 160, flexShrink: 0, paddingTop: 4 }}>
             {shelves.length > 0 && (
               <div style={{ marginBottom: 28 }}>
-                <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.8px", textTransform: "uppercase", color: "#aaa", marginBottom: 10 }}>Shelves</div>
+                <SectionHeading>Shelves</SectionHeading>
                 {shelves.map(shelf => (
                   <div key={shelf} onClick={() => { setActiveTag(null); setActiveShelf(p => p === shelf ? null : shelf); }}
                     style={{ fontSize: 13, padding: "4px 0", cursor: "pointer", color: activeShelf === shelf ? "#e8318a" : "#444", fontWeight: activeShelf === shelf ? 500 : 400 }}>
@@ -116,7 +123,7 @@ export default function BookList({ userId, onSelect }) {
             )}
             {tags.length > 0 && (
               <div>
-                <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.8px", textTransform: "uppercase", color: "#aaa", marginBottom: 10 }}>Tags</div>
+                <SectionHeading>Tags</SectionHeading>
                 {tags.map(tag => (
                   <div key={tag} onClick={() => { setActiveShelf(null); setActiveTag(p => p === tag ? null : tag); }}
                     style={{ fontSize: 13, padding: "4px 0", cursor: "pointer", color: activeTag === tag ? "#e8318a" : "#444", fontWeight: activeTag === tag ? 500 : 400 }}>
