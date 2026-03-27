@@ -22,7 +22,7 @@ function StarRating({ value, onChange }) {
 }
 
 async function searchGoogleBooks(query) {
-  const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`);
+  const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5&key=AIzaSyAGIJE0s9K-wBC4lErKJgIhZ-cl5QRd0Rk`);
   const data = await res.json();
   return (data.items || []).map(item => {
     const info = item.volumeInfo;
