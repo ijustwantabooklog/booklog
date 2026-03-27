@@ -17,13 +17,13 @@ function StarRating({ value, onChange }) {
   );
 }
 
-async function searchGoogleBooks(query) {
-  const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5&key=AIzaSyAGIJE0s9K-wBC4lErKJgIhZ-cl5QRd0Rk`);
+async function searchGoogleBooks(q) {
+  const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=5&key=AIzaSyAGIJE0s9K-wBC4lErKJgIhZ-cl5QRd0Rk`);
   const data = await res.json();
   return (data.items || []).map(item => {
     const info = item.volumeInfo;
     const cover = info.imageLinks?.thumbnail?.replace("http://", "https://") || null;
-    return { title: info.title || "", author: (info.authors || [])[0] || "", year: info.publishedDate?.slice(0, 4) || "", coverUrl: cover, googleId: item.id };
+    return { title: info.title || "", author: (info.authors || [])[0] || "", year: info.publishedDate?.slice(0, 4) || "", coverUrl: cover };
   });
 }
 
@@ -43,31 +43,26 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
     quotes: book?.quotes || [],
     dateRead: book?.dateRead || dateStr,
     coverUrl: book?.coverUrl || "",
+    currentlyReading: book?.currentlyReading || false,
   });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
-
-  // shelf input
   const [shelfInput, setShelfInput] = useState("");
   const [shelfSuggestions, setShelfSuggestions] = useState([]);
   const [existingShelves, setExistingShelves] = useState([]);
-
-  // tag input
   const [tagInput, setTagInput] = useState("");
-
   const [newQuotePage, setNewQuotePage] = useState("");
   const [newQuoteText, setNewQuoteText] = useState("");
   const [showQuoteInput, setShowQuoteInput] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarDate, setCalendarDate] = useState(today);
-
+  const pageInputRef = useRef(null);
   const searchTimeout = useRef(null);
 
-  // Load existing shelves from user's books
   useEffect(() => {
     const q = query(collection(db, "users", userId, "books"), orderBy("createdAt", "desc"));
     return onSnapshot(q, (snap) => {
@@ -76,7 +71,6 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
     });
   }, [userId]);
 
-  // Shelf autocomplete
   useEffect(() => {
     if (!shelfInput.trim()) { setShelfSuggestions([]); return; }
     const matches = existingShelves.filter(s =>
@@ -85,7 +79,6 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
     setShelfSuggestions(matches);
   }, [shelfInput, existingShelves, form.shelves]);
 
-  // Book search
   useEffect(() => {
     if (!searchQuery.trim()) { setSearchResults([]); setShowResults(false); return; }
     clearTimeout(searchTimeout.current);
@@ -98,6 +91,11 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
     }, 500);
   }, [searchQuery]);
 
+  // Focus page input when quote row opens
+  useEffect(() => {
+    if (showQuoteInput && pageInputRef.current) pageInputRef.current.focus();
+  }, [showQuoteInput]);
+
   const pickBook = (result) => {
     setForm(f => ({ ...f, title: result.title, author: result.author, year: result.year, coverUrl: result.coverUrl || "" }));
     setShowResults(false);
@@ -106,18 +104,15 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
 
   const update = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
-  // Add shelf on enter or suggestion click
   const addShelf = (name) => {
     const trimmed = (name || shelfInput).trim();
     if (!trimmed || form.shelves.includes(trimmed)) { setShelfInput(""); setShelfSuggestions([]); return; }
     update("shelves", [...form.shelves, trimmed]);
-    setShelfInput("");
-    setShelfSuggestions([]);
+    setShelfInput(""); setShelfSuggestions([]);
   };
 
   const removeShelf = (s) => update("shelves", form.shelves.filter(x => x !== s));
 
-  // Add tag on enter
   const addTag = (e) => {
     if (e.key === "Enter" && tagInput.trim()) {
       const cleaned = tagInput.trim().replace(/^#/, "");
@@ -136,26 +131,20 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
 
   const removeQuote = (i) => update("quotes", form.quotes.filter((_, idx) => idx !== i));
 
-  // Calendar helpers
   const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
   const getFirstDay = (y, m) => new Date(y, m, 1).getDay();
 
   const selectDate = (day) => {
     const d = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day);
-    const str = d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-    update("dateRead", str);
+    update("dateRead", d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }));
     setShowCalendar(false);
   };
 
   const handleSave = async () => {
     if (!form.title.trim()) return;
     setSaving(true);
-    const data = {
-      ...form,
-      shelf: form.shelves[0] || "",
-      updatedAt: serverTimestamp(),
-    };
+    const data = { ...form, shelf: form.shelves[0] || "", updatedAt: serverTimestamp() };
     try {
       if (book?.id) {
         await updateDoc(doc(db, "users", userId, "books", book.id), data);
@@ -165,10 +154,7 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
         await addDoc(collection(db, "users", userId, "books"), data);
         onSave(null);
       }
-    } catch (e) {
-      console.error(e);
-      setSaving(false);
-    }
+    } catch (e) { console.error(e); setSaving(false); }
   };
 
   const yr = calendarDate.getFullYear();
@@ -180,7 +166,6 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
     <div style={{ background: "#f4f4f4", minHeight: "100vh" }}>
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 16px 60px" }}>
 
-        {/* header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0 16px" }}>
           <button onClick={onCancel} style={ghostBtn}>Cancel</button>
           <button onClick={handleSave} disabled={saving} style={{ background: "#e8318a", color: "#fff", border: "none", borderRadius: 6, padding: "8px 20px", fontSize: 13, fontWeight: 500, cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
@@ -201,11 +186,8 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
                   style={{ display: "flex", gap: 12, padding: "10px 14px", cursor: "pointer", borderTop: i > 0 ? "1px solid #f5f5f5" : "none" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
                   onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
-                  {r.coverUrl ? (
-                    <img src={r.coverUrl} alt={r.title} style={{ width: 32, height: 46, objectFit: "cover", borderRadius: 2, flexShrink: 0 }} />
-                  ) : (
-                    <div style={{ width: 32, height: 46, background: "#e8e8e8", borderRadius: 2, flexShrink: 0 }} />
-                  )}
+                  {r.coverUrl ? <img src={r.coverUrl} alt={r.title} style={{ width: 32, height: 46, objectFit: "cover", borderRadius: 2, flexShrink: 0 }} />
+                    : <div style={{ width: 32, height: 46, background: "#e8e8e8", borderRadius: 2, flexShrink: 0 }} />}
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 500, color: "#1a1a1a" }}>{r.title}</div>
                     <div style={{ fontSize: 12, color: "#888" }}>{r.author} {r.year && `· ${r.year}`}</div>
@@ -218,11 +200,8 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
 
         {/* book info */}
         <div style={{ display: "flex", gap: 20, alignItems: "flex-start", margin: "8px 0 24px" }}>
-          {form.coverUrl ? (
-            <img src={form.coverUrl} alt={form.title} style={{ width: 90, height: 128, objectFit: "cover", borderRadius: 3, flexShrink: 0 }} />
-          ) : (
-            <div style={{ width: 90, height: 128, background: "#e0e0e0", borderRadius: 3, flexShrink: 0 }} />
-          )}
+          {form.coverUrl ? <img src={form.coverUrl} alt={form.title} style={{ width: 90, height: 128, objectFit: "cover", borderRadius: 3, flexShrink: 0 }} />
+            : <div style={{ width: 90, height: 128, background: "#e0e0e0", borderRadius: 3, flexShrink: 0 }} />}
           <div style={{ flex: 1 }}>
             <input value={form.title} onChange={e => update("title", e.target.value)} placeholder="Title"
               style={{ ...bareInput, fontFamily: "Georgia, serif", fontSize: 24, color: "#1a1a1a", display: "block", width: "100%", marginBottom: 6 }} />
@@ -235,51 +214,70 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
           </div>
         </div>
 
-        {/* date — with calendar */}
-        <div style={{ ...card, position: "relative" }}>
-          <div style={{ ...cardRow, cursor: "pointer" }} onClick={() => setShowCalendar(p => !p)}>
-            <span style={cardLabel}>Date</span>
-            <span style={{ fontSize: 14 }}>
-              <strong style={{ fontWeight: 500 }}>{form.dateRead === dateStr ? "Today" : form.dateRead}</strong>
-              {form.dateRead === dateStr && <span style={{ color: "#888", marginLeft: 6 }}>{dateStr}</span>}
-            </span>
-          </div>
-          {showCalendar && (
-            <div style={{ padding: "0 16px 16px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <button onClick={() => setCalendarDate(new Date(yr, mo - 1, 1))} style={ghostBtn}>←</button>
-                <span style={{ fontSize: 13, fontWeight: 500 }}>{MONTHS[mo]} {yr}</span>
-                <button onClick={() => setCalendarDate(new Date(yr, mo + 1, 1))} style={ghostBtn}>→</button>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, textAlign: "center" }}>
-                {["S","M","T","W","T","F","S"].map((d, i) => (
-                  <div key={i} style={{ fontSize: 10, color: "#aaa", padding: "4px 0" }}>{d}</div>
-                ))}
-                {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
-                {Array.from({ length: daysInMonth }).map((_, i) => {
-                  const day = i + 1;
-                  const isToday = day === today.getDate() && mo === today.getMonth() && yr === today.getFullYear();
-                  return (
-                    <div key={day} onClick={() => selectDate(day)}
-                      style={{ fontSize: 13, padding: "5px 2px", borderRadius: 4, cursor: "pointer",
-                        background: isToday ? "#e8318a" : "none", color: isToday ? "#fff" : "#333",
-                        fontWeight: isToday ? 500 : 400 }}
-                      onMouseEnter={e => { if (!isToday) e.currentTarget.style.background = "#f0f0f0"; }}
-                      onMouseLeave={e => { if (!isToday) e.currentTarget.style.background = "none"; }}>
-                      {day}
-                    </div>
-                  );
-                })}
-              </div>
+        {/* currently reading toggle */}
+        <div style={{ ...card, marginBottom: 10 }}>
+          <div style={{ ...cardRow, cursor: "pointer" }} onClick={() => update("currentlyReading", !form.currentlyReading)}>
+            <span style={cardLabel}>Currently reading</span>
+            <div style={{
+              width: 36, height: 20, borderRadius: 10, background: form.currentlyReading ? "#e8318a" : "#ddd",
+              position: "relative", transition: "background 0.2s", flexShrink: 0,
+            }}>
+              <div style={{
+                width: 16, height: 16, borderRadius: "50%", background: "#fff",
+                position: "absolute", top: 2, left: form.currentlyReading ? 18 : 2,
+                transition: "left 0.2s",
+              }} />
             </div>
-          )}
+          </div>
         </div>
 
+        {/* date — hidden if currently reading */}
+        {!form.currentlyReading && (
+          <div style={{ ...card, position: "relative", marginBottom: 10 }}>
+            <div style={{ ...cardRow, cursor: "pointer" }} onClick={() => setShowCalendar(p => !p)}>
+              <span style={cardLabel}>Date</span>
+              <span style={{ fontSize: 14 }}>
+                <strong style={{ fontWeight: 500 }}>{form.dateRead === dateStr ? "Today" : form.dateRead}</strong>
+                {form.dateRead === dateStr && <span style={{ color: "#888", marginLeft: 6 }}>{dateStr}</span>}
+              </span>
+            </div>
+            {showCalendar && (
+              <div style={{ padding: "0 16px 16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <button onClick={() => setCalendarDate(new Date(yr, mo - 1, 1))} style={ghostBtn}>←</button>
+                  <span style={{ fontSize: 13, fontWeight: 500 }}>{MONTHS[mo]} {yr}</span>
+                  <button onClick={() => setCalendarDate(new Date(yr, mo + 1, 1))} style={ghostBtn}>→</button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, textAlign: "center" }}>
+                  {["S","M","T","W","T","F","S"].map((d, i) => <div key={i} style={{ fontSize: 10, color: "#aaa", padding: "4px 0" }}>{d}</div>)}
+                  {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
+                  {Array.from({ length: daysInMonth }).map((_, i) => {
+                    const day = i + 1;
+                    const isToday = day === today.getDate() && mo === today.getMonth() && yr === today.getFullYear();
+                    return (
+                      <div key={day} onClick={() => selectDate(day)}
+                        style={{ fontSize: 13, padding: "5px 2px", borderRadius: 4, cursor: "pointer", background: isToday ? "#e8318a" : "none", color: isToday ? "#fff" : "#333", fontWeight: isToday ? 500 : 400 }}
+                        onMouseEnter={e => { if (!isToday) e.currentTarget.style.background = "#f0f0f0"; }}
+                        onMouseLeave={e => { if (!isToday) e.currentTarget.style.background = "none"; }}>
+                        {day}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* rate / shelves / tags / notes */}
-        <div style={{ ...card, marginTop: 10 }}>
+        <div style={{ ...card, marginTop: 0 }}>
           <div style={cardRow}>
             <span style={cardLabel}>Rate</span>
-            <StarRating value={form.rating} onChange={v => update("rating", v)} />
+            {form.rating === 0 ? (
+              <span style={{ fontSize: 13, color: "#bbb", cursor: "pointer" }} onClick={() => update("rating", 1)}>tap to rate</span>
+            ) : (
+              <StarRating value={form.rating} onChange={v => update("rating", v === form.rating ? 0 : v)} />
+            )}
           </div>
 
           {/* Shelves */}
@@ -299,7 +297,7 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
                 )}
                 <input value={shelfInput} onChange={e => setShelfInput(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addShelf(); } }}
-                  placeholder="Type a shelf name, press Enter..."
+                  placeholder=""
                   style={{ ...bareInput, fontSize: 14, width: "100%" }} />
                 {shelfSuggestions.length > 0 && (
                   <div style={{ position: "absolute", left: 88, right: 16, zIndex: 50, background: "#fff", border: "1px solid #e0e0e0", borderRadius: 6, marginTop: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
@@ -326,14 +324,13 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
                     {form.tags.map(t => (
                       <span key={t} style={{ fontSize: 13, color: "#555", fontFamily: "Georgia, serif", fontStyle: "italic" }}>
-                        #{t}
-                        <span onClick={() => removeTag(t)} style={{ marginLeft: 4, cursor: "pointer", color: "#ccc", fontStyle: "normal", fontFamily: "inherit" }}>×</span>
+                        #{t}<span onClick={() => removeTag(t)} style={{ marginLeft: 4, cursor: "pointer", color: "#ccc", fontStyle: "normal", fontFamily: "inherit" }}>×</span>
                       </span>
                     ))}
                   </div>
                 )}
                 <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={addTag}
-                  placeholder="#FeministLiterature, press Enter to add..."
+                  placeholder=""
                   style={{ ...bareInput, fontSize: 14, width: "100%" }} />
               </div>
             </div>
@@ -359,12 +356,23 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
           ))}
           {showQuoteInput && (
             <div style={{ borderTop: form.quotes.length > 0 ? "1px solid #e8e8e8" : "none", padding: "12px 16px 4px", display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <input value={newQuotePage} onChange={e => setNewQuotePage(e.target.value)} placeholder="pg"
-                style={{ ...bareInput, width: 48, flexShrink: 0, color: "#e8318a", fontSize: 14 }} />
-              <textarea value={newQuoteText} onChange={e => setNewQuoteText(e.target.value)}
-                placeholder="Quote text..." rows={2} autoFocus
-                style={{ ...bareInput, flex: 1, resize: "none", lineHeight: 1.5, fontSize: 14 }} />
-              <button onClick={addQuote} style={{ background: "#1a1a1a", color: "#fff", border: "none", borderRadius: 5, padding: "6px 12px", fontSize: 12, cursor: "pointer", marginTop: 2 }}>add</button>
+              <input
+                ref={pageInputRef}
+                value={newQuotePage}
+                onChange={e => setNewQuotePage(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); document.getElementById("quote-text-input")?.focus(); } }}
+                placeholder="pg"
+                style={{ ...bareInput, width: 48, flexShrink: 0, color: "#e8318a", fontSize: 14 }}
+              />
+              <textarea
+                id="quote-text-input"
+                value={newQuoteText}
+                onChange={e => setNewQuoteText(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addQuote(); } }}
+                placeholder="Quote text... (Enter to save)"
+                rows={2}
+                style={{ ...bareInput, flex: 1, resize: "none", lineHeight: 1.5, fontSize: 14 }}
+              />
             </div>
           )}
           <button onClick={() => setShowQuoteInput(true)} style={{ background: "none", border: "none", color: "#aaa", fontSize: 13, padding: "10px 16px", display: "block", width: "100%", textAlign: "left", cursor: "pointer" }}>
