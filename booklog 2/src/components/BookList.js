@@ -74,17 +74,21 @@ export default function BookList({ userId, onSelect }) {
           {currentlyReading.length > 0 && (
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontSize: 16, color: "#444", fontWeight: 500, marginBottom: 10 }}>Currently Reading</div>
-              <div style={{ ...cardStyle, padding: "20px 16px" }}>
-                <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 8 }}>
-                  {currentlyReading.map(book => (
-                    <div key={book.id} onClick={() => onSelect(book.id)}
-                      style={{ flexShrink: 0, cursor: "pointer", textAlign: "center", width: 90 }}>
-                      {book.coverUrl
-                        ? <img src={book.coverUrl} alt={book.title} style={{ width: 80, height: 115, objectFit: "cover", border: "1px solid #ddd", borderRadius: 3, display: "block", margin: "0 auto" }} />
-                        : <div style={{ width: 80, height: 115, background: "#e8e8e8", border: "1px solid #ddd", borderRadius: 3, margin: "0 auto" }} />}
+              <div style={{ ...cardStyle }}>
+                {currentlyReading.map((book, i) => (
+                  <div key={book.id} onClick={() => onSelect(book.id)}
+                    style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 16px", borderBottom: i === currentlyReading.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: "pointer" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
+                    onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                    {book.coverUrl
+                      ? <img src={book.coverUrl} alt={book.title} style={{ width: 36, height: 52, objectFit: "cover", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0 }} />
+                      : <div style={{ width: 36, height: 52, background: "#e8e8e8", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0 }} />}
+                    <div>
+                      <div style={{ fontSize: 15, color: "#0000ee", textDecoration: "underline", marginBottom: 2, fontFamily: "Georgia, serif" }}>{book.title}</div>
+                      <div style={{ fontSize: 13, color: "#444" }}>{book.author}</div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
