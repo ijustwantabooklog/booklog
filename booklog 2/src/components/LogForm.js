@@ -37,7 +37,7 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
     translator: book?.translator || "",
     year: book?.year || "",
     rating: book?.rating || 0,
-    shelves: book?.shelves || (book?.shelf ? [book.shelf] : []),
+    shelves: book?.shelves || [],
     tags: book?.tags || [],
     notes: book?.notes || book?.review || "",
     quotes: book?.quotes || [],
@@ -66,7 +66,7 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
   useEffect(() => {
     const q = query(collection(db, "users", userId, "books"), orderBy("createdAt", "desc"));
     return onSnapshot(q, (snap) => {
-      const allShelves = snap.docs.flatMap(d => d.data().shelves || (d.data().shelf ? [d.data().shelf] : []));
+      const allShelves = snap.docs.flatMap(d => d.data().shelves || []);
       setExistingShelves([...new Set(allShelves)]);
     });
   }, [userId]);
@@ -140,9 +140,11 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
   };
 
   const handleSave = async () => {
+    const pendingShelves = shelfInput.trim() && !form.shelves.includes(shelfInput.trim()) ? [...form.shelves, shelfInput.trim()] : form.shelves;
+    const pendingTags = tagInput.trim() && !form.tags.includes(tagInput.trim().replace(/^#/, "")) ? [...form.tags, tagInput.trim().replace(/^#/, "")] : form.tags;
     if (!form.title.trim()) return;
     setSaving(true);
-    const data = { ...form, shelf: form.shelves[0] || "", updatedAt: serverTimestamp() };
+    const data = { ...form, shelves: pendingShelves, tags: pendingTags, updatedAt: serverTimestamp() };
     try {
       if (book?.id) {
         await updateDoc(doc(db, "users", userId, "books", book.id), data);
@@ -285,7 +287,7 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
                   </div>
                 )}
                 <input value={shelfInput} onChange={e => setShelfInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addShelf(); } }}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addShelf(); } }} onBlur={() => { if (shelfInput.trim()) addShelf(); }}
                   placeholder="Favourites"
                   style={{ ...bareInput, fontSize: 14, width: "100%", color: shelfInput ? "#1a1a1a" : "#bbb" }} />
                 {shelfSuggestions.length > 0 && (
