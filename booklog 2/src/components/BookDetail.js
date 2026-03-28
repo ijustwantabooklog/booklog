@@ -27,6 +27,10 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
 
   if (!book) return <div style={{ padding: 40, color: "#aaa", fontSize: 14 }}>loading...</div>;
 
+  const shelves = book.shelves || [];
+  const tags = book.tags || [];
+  const notes = book.notes || book.review || "";
+
   return (
     <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 60px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0 20px" }}>
@@ -38,11 +42,9 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
       </div>
 
       <div style={{ display: "flex", gap: 28, alignItems: "flex-start", marginBottom: 32 }}>
-        {book.coverUrl ? (
-          <img src={book.coverUrl} alt={book.title} style={{ width: 90, height: 128, objectFit: "cover", borderRadius: 3, flexShrink: 0 }} />
-        ) : (
-          <div style={{ width: 90, height: 128, background: "#e0e0e0", borderRadius: 3, flexShrink: 0 }} />
-        )}
+        {book.coverUrl
+          ? <img src={book.coverUrl} alt={book.title} style={{ width: 90, height: 128, objectFit: "cover", borderRadius: 3, flexShrink: 0 }} />
+          : <div style={{ width: 90, height: 128, background: "#e0e0e0", borderRadius: 3, flexShrink: 0 }} />}
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: "#aaa", marginBottom: 4, letterSpacing: "0.5px" }}>jenny/</div>
           <h1 style={{ fontFamily: "Georgia, serif", fontSize: 30, fontWeight: 400, margin: "0 0 8px", color: "#1a1a1a", lineHeight: 1.2 }}>
@@ -51,14 +53,16 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
           <div style={{ fontSize: 15, color: "#444", marginBottom: 4 }}>
             {book.author}{book.translator ? `, translation by ${book.translator}` : ""}. {book.year}.
           </div>
-          <div style={{ marginTop: 12 }}>
-            <StarDisplay value={book.rating} size={22} />
-          </div>
+          {book.rating > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <StarDisplay value={book.rating} size={22} />
+            </div>
+          )}
         </div>
       </div>
 
-      {book.review && (
-        <p style={{ fontSize: 15, color: "#333", lineHeight: 1.7, margin: "0 0 16px" }}>{book.review}</p>
+      {notes && (
+        <p style={{ fontSize: 15, color: "#333", lineHeight: 1.7, margin: "0 0 16px" }}>{notes}</p>
       )}
 
       {book.quotes?.length > 0 && (
@@ -72,17 +76,29 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
         </div>
       )}
 
-      {book.tags?.length > 0 && (
+      {shelves.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "16px 0 8px" }}>
-          {book.tags.map((tag) => (
-            <span key={tag} style={{ fontSize: 12, border: "1px solid #ccc", borderRadius: 4, padding: "3px 10px", color: "#444" }}>
-              {tag}
+          {shelves.map(s => (
+            <span key={s} style={{ fontSize: 12, border: "1px solid #ccc", borderRadius: 4, padding: "3px 10px", color: "#444" }}>
+              {s}
             </span>
           ))}
         </div>
       )}
 
-      <div style={{ fontSize: 12, color: "#aaa", marginTop: 10 }}>read on {book.dateRead}.</div>
+      {tags.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "8px 0" }}>
+          {tags.map(t => (
+            <span key={t} style={{ fontSize: 13, color: "#555", fontFamily: "Georgia, serif", fontStyle: "italic" }}>
+              #{t}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {!book.currentlyReading && (
+        <div style={{ fontSize: 12, color: "#aaa", marginTop: 10 }}>read on {book.dateRead}.</div>
+      )}
     </div>
   );
 }
