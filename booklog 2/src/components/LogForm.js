@@ -56,6 +56,7 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
   const [tagInput, setTagInput] = useState("");
   const [newQuotePage, setNewQuotePage] = useState("");
   const [newQuoteText, setNewQuoteText] = useState("");
+  const [newQuoteNote, setNewQuoteNote] = useState("");
   const [showQuoteInput, setShowQuoteInput] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -123,8 +124,8 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
 
   const addQuote = () => {
     if (!newQuoteText.trim()) return;
-    update("quotes", [...form.quotes, { page: newQuotePage, text: newQuoteText.trim() }]);
-    setNewQuotePage(""); setNewQuoteText(""); setShowQuoteInput(false);
+    update("quotes", [...form.quotes, { page: newQuotePage, text: newQuoteText.trim(), quoteNote: newQuoteNote.trim() }]);
+    setNewQuotePage(""); setNewQuoteText(""); setNewQuoteNote(""); setShowQuoteInput(false);
   };
 
   const removeQuote = (i) => update("quotes", form.quotes.filter((_, idx) => idx !== i));
@@ -351,11 +352,16 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
                 onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); document.getElementById("quote-text")?.focus(); } }}
                 placeholder="pg"
                 style={{ ...bareInput, width: 48, flexShrink: 0, color: "#e8318a", fontSize: 14 }} />
-              <textarea id="quote-text" value={newQuoteText} onChange={e => setNewQuoteText(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addQuote(); } }}
-                placeholder="Quote"
-                rows={2}
-                style={{ ...bareInput, flex: 1, resize: "none", lineHeight: 1.5, fontSize: 14 }} />
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                <textarea id="quote-text" value={newQuoteText} onChange={e => setNewQuoteText(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addQuote(); } }}
+                  placeholder="Quote"
+                  rows={2}
+                  style={{ ...bareInput, resize: "none", lineHeight: 1.5, fontSize: 14 }} />
+                <input value={newQuoteNote} onChange={e => setNewQuoteNote(e.target.value)}
+                  placeholder="Note (optional, shows on Notes tab)"
+                  style={{ ...bareInput, fontSize: 13, color: "#888", borderTop: "0.5px solid #eee", paddingTop: 6 }} />
+              </div>
             </div>
           )}
           <button onClick={() => setShowQuoteInput(true)} style={{ background: "none", border: "none", color: "#aaa", fontSize: 13, padding: "10px 16px", display: "block", width: "100%", textAlign: "left", cursor: "pointer" }}>
