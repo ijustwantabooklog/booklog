@@ -28,15 +28,15 @@ export default function App() {
 
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
-      <span style={{ color: "#aaa", fontSize: 14 }}>loading...</span>
+      <span style={{ color: "#aaa", fontSize: 15 }}>loading...</span>
     </div>
   );
 
   if (!user) return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", gap: 16 }}>
-      <span style={{ fontFamily: "Georgia, serif", fontSize: 28, fontWeight: 400 }}>jenny/</span>
-      <p style={{ color: "#888", fontSize: 14, margin: 0 }}>your book log</p>
-      <button onClick={signIn} style={{ marginTop: 12, background: "#e8318a", color: "#fff", border: "none", borderRadius: 8, padding: "10px 24px", fontSize: 14, cursor: "pointer", fontWeight: 500 }}>
+      <span style={{ fontSize: 28, color: "#444" }}>jenny/</span>
+      <p style={{ color: "#888", fontSize: 15, margin: 0 }}>your book log</p>
+      <button onClick={signIn} style={{ marginTop: 12, background: "#e8318a", color: "#fff", border: "none", borderRadius: 6, padding: "10px 24px", fontSize: 15, cursor: "pointer" }}>
         Sign in with Google
       </button>
     </div>
@@ -78,18 +78,17 @@ export default function App() {
 function Nav({ firstName, page, setPage, onNew, onSignOut }) {
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "28px 0 0" }}>
-        <span style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 400 }}>{firstName}/</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-          <button onClick={() => setPage("home")} style={{ ...navBtn, color: page === "home" ? "#1a1a1a" : "#aaa", fontWeight: page === "home" ? 500 : 400 }}>Home</button>
-          <button onClick={() => setPage("diary")} style={{ ...navBtn, color: page === "diary" ? "#1a1a1a" : "#aaa", fontWeight: page === "diary" ? 500 : 400 }}>Diary</button>
-          <button onClick={onNew} style={{ background: "#e8318a", color: "#fff", border: "none", borderRadius: 6, padding: "7px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Log it</button>
-          <button onClick={onSignOut} style={{ ...navBtn, color: "#ccc", fontSize: 12 }}>sign out</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0 10px" }}>
+        <span style={{ fontSize: 22, color: "#444" }}>{firstName}/</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+          <button onClick={onNew} style={{ background: "#e8318a", color: "#fff", border: "none", borderRadius: 6, padding: "7px 18px", fontSize: 14, cursor: "pointer" }}>Log it</button>
+          <span onClick={onSignOut} style={{ fontSize: 13, color: "#aaa", cursor: "pointer" }}>sign out</span>
         </div>
       </div>
-      <div style={{ borderBottom: "1px solid #e8e8e8", marginTop: 16 }} />
+      <div style={{ display: "flex", gap: 24, paddingBottom: 12 }}>
+        <span onClick={() => setPage("home")} style={{ fontSize: 15, color: page === "home" ? "#444" : "#aaa", fontWeight: page === "home" ? 500 : 400, cursor: "pointer" }}>Home</span>
+        <span onClick={() => setPage("diary")} style={{ fontSize: 15, color: page === "diary" ? "#444" : "#aaa", fontWeight: page === "diary" ? 500 : 400, cursor: "pointer" }}>Diary</span>
+      </div>
     </div>
   );
 }
-
-const navBtn = { background: "none", border: "none", fontSize: 14, cursor: "pointer", padding: "4px 0" };
