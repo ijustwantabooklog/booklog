@@ -25,6 +25,12 @@ function SectionHeading({ children }) {
   );
 }
 
+function getBookShelves(book) {
+  if (book.shelves && book.shelves.length > 0) return book.shelves;
+  if (book.shelf) return [book.shelf];
+  return [];
+}
+
 export default function BookList({ userId, onSelect }) {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,13 +45,13 @@ export default function BookList({ userId, onSelect }) {
     });
   }, [userId]);
 
-  const shelves = [...new Set(books.map(b => b.shelf).filter(Boolean))].sort();
+  const shelves = [...new Set(books.flatMap(b => getBookShelves(b)).filter(Boolean))].sort();
   const tags = [...new Set(books.flatMap(b => b.tags || []).filter(Boolean))].sort();
   const currentlyReading = books.filter(b => b.currentlyReading);
   const finished = books.filter(b => !b.currentlyReading);
 
   const filtered = finished.filter(b => {
-    if (activeShelf && b.shelf !== activeShelf) return false;
+    if (activeShelf && !getBookShelves(b).includes(activeShelf)) return false;
     if (activeTag && !(b.tags || []).includes(activeTag)) return false;
     return true;
   });
@@ -55,7 +61,6 @@ export default function BookList({ userId, onSelect }) {
       <div style={{ display: "flex", gap: 48, alignItems: "flex-start", marginTop: 24 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
 
-          {/* Currently reading */}
           {currentlyReading.length > 0 && (
             <div style={{ marginBottom: 36 }}>
               <SectionHeading>Currently reading</SectionHeading>
@@ -77,11 +82,8 @@ export default function BookList({ userId, onSelect }) {
             </div>
           )}
 
-          {/* Activity */}
           {!loading && filtered.length > 0 && <SectionHeading>Activity</SectionHeading>}
-
           {loading && <p style={{ color: "#aaa", fontSize: 14, padding: "20px 0" }}>loading...</p>}
-
           {!loading && books.length === 0 && (
             <p style={{ fontSize: 14, color: "#aaa", padding: "40px 0" }}>no books yet — tap "Log it" to add your first</p>
           )}
@@ -106,7 +108,6 @@ export default function BookList({ userId, onSelect }) {
           ))}
         </div>
 
-        {/* Sidebar */}
         {(shelves.length > 0 || tags.length > 0) && (
           <div style={{ width: 160, flexShrink: 0, paddingTop: 4 }}>
             {shelves.length > 0 && (
@@ -116,7 +117,7 @@ export default function BookList({ userId, onSelect }) {
                   <div key={shelf} onClick={() => { setActiveTag(null); setActiveShelf(p => p === shelf ? null : shelf); }}
                     style={{ fontSize: 13, padding: "4px 0", cursor: "pointer", color: activeShelf === shelf ? "#e8318a" : "#444", fontWeight: activeShelf === shelf ? 500 : 400 }}>
                     {shelf}
-                    <span style={{ fontSize: 11, color: "#ccc", marginLeft: 5 }}>{books.filter(b => b.shelf === shelf).length}</span>
+                    <span style={{ fontSize: 11, color: "#ccc", marginLeft: 5 }}>{books.filter(b => getBookShelves(b).includes(shelf)).length}</span>
                   </div>
                 ))}
               </div>
