@@ -134,7 +134,7 @@ export default function BookList({ userId, onSelect, onSelectArticle, onShelfCli
         </div>
 
         {/* Sidebar */}
-        <div style={{ width: 190, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, paddingTop: 34 }}>
+        <div style={{ width: 190, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, paddingTop: 26 }}>
           {/* Stats */}
           <div style={cardStyle}>
             <div style={{ fontSize: 15, fontWeight: 600, color: "#444", borderBottom: "1px solid #e0e0e0", padding: "14px 16px 10px" }}>Stats</div>
