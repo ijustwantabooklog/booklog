@@ -340,10 +340,13 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
         {/* quotes */}
         <div style={{ ...card, marginTop: 10 }}>
           {form.quotes.map((q, i) => (
-            <div key={i} style={{ ...cardRow, borderTop: i === 0 ? "none" : "1px solid #e8e8e8", alignItems: "flex-start", gap: 16 }}>
-              <span style={{ fontSize: 14, color: "#e8318a", minWidth: 40, paddingTop: 2 }}>{q.page || "—"}</span>
-              <span style={{ fontSize: 14, color: "#333", flex: 1, lineHeight: 1.5 }}>{q.text}</span>
-              <button onClick={() => removeQuote(i)} style={{ background: "none", border: "none", color: "#ccc", fontSize: 16, padding: 0, cursor: "pointer" }}>×</button>
+            <div key={i} style={{ ...cardRow, borderTop: i === 0 ? "none" : "1px solid #e8e8e8", alignItems: "flex-start", gap: 16, background: "#f7f7f7", flexDirection: "column", paddingBottom: q.quoteNote ? 10 : undefined }}>
+              <div style={{ display: "flex", gap: 16, alignItems: "flex-start", width: "100%" }}>
+                <span style={{ fontSize: 14, color: "#e8318a", minWidth: 40, paddingTop: 2 }}>{q.page || "—"}</span>
+                <span style={{ fontSize: 14, color: "#333", flex: 1, lineHeight: 1.5 }}>{q.text}</span>
+                <button onClick={() => removeQuote(i)} style={{ background: "none", border: "none", color: "#ccc", fontSize: 16, padding: 0, cursor: "pointer" }}>×</button>
+              </div>
+              {q.quoteNote && <div style={{ marginLeft: 56, fontSize: 13, color: "#888", fontStyle: "italic", lineHeight: 1.5 }}>{q.quoteNote}</div>}
             </div>
           ))}
           {showQuoteInput && (
