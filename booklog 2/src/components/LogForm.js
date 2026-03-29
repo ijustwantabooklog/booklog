@@ -386,3 +386,4 @@ const card = { background: "#fff", borderRadius: 10, border: "1px solid #e2e2e2"
 const cardRow = { display: "flex", alignItems: "center", gap: 16, padding: "12px 16px" };
 const cardLabel = { fontSize: 14, color: "#555", minWidth: 72, flexShrink: 0 };
 const bareInput = { background: "none", border: "none", outline: "none", fontFamily: "inherit", padding: 0 };
+
