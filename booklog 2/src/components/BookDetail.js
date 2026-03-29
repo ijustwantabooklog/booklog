@@ -76,19 +76,14 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
           </div>
         )}
 
-        {shelves.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "16px 0 8px" }}>
-            {shelves.map(s => (
-              <span key={s} style={{ fontSize: 12, border: "1px solid #ccc", borderRadius: 4, padding: "3px 10px", color: "#555" }}>{s}</span>
-            ))}
-          </div>
-        )}
-
-        {tags.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "8px 0" }}>
-            {tags.map(t => (
-              <span key={t} style={{ fontSize: 13, color: "#555", fontFamily: "Georgia, serif", fontStyle: "italic" }}>#{t}</span>
-            ))}
+        {(shelves.length > 0 || tags.length > 0) && (
+          <div style={{ marginTop: 16, fontSize: 13, color: "#555", lineHeight: 1.8 }}>
+            {shelves.length > 0 && (
+              <div><span style={{ color: "#aaa" }}>Shelves: </span>{shelves.join(", ")}</div>
+            )}
+            {tags.length > 0 && (
+              <div><span style={{ color: "#aaa" }}>Tags: </span>{tags.map(t => `#${t}`).join(" ")}</div>
+            )}
           </div>
         )}
 
