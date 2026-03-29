@@ -21,6 +21,7 @@ export default function Profile({ userId, username, currentUserId, onSelectBook,
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
   const [editingBio, setEditingBio] = useState(false);
+  const [allActivity, setAllActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [bioInput, setBioInput] = useState("");
 
@@ -53,7 +54,11 @@ export default function Profile({ userId, username, currentUserId, onSelectBook,
       }));
       setFollowingList(list);
     });
-    return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
+    const unsubActivity = onSnapshot(
+      query(collection(db, "users", userId, "activity"), orderBy("createdAt", "desc")),
+      snap => setAllActivity(snap.docs.map(d => ({ id: d.id, ...d.data() })).slice(0, 20))
+    );
+    return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsubActivity(); };
   }, [userId, currentUserId]);
 
   const saveBio = async () => {
@@ -75,22 +80,7 @@ export default function Profile({ userId, username, currentUserId, onSelectBook,
   const currentlyReading = books.filter(b => b.currentlyReading);
   const shelves = [...new Set(books.flatMap(b => b.shelves || []).filter(Boolean))].sort();
 
-  const allActivity = [
-    ...books.map(book => {
-      let text = "Logged";
-      if (book.currentlyReading) text = "Marked as currently reading";
-      else if (book.rating > 0 && book.notes) text = "Read and reviewed";
-      else if (book.rating > 0) text = "Read and rated";
-      return { id: book.id, type: "book", text, title: book.title, ts: book.updatedAt || book.createdAt };
-    }),
-    ...articles.map(a => ({
-      id: a.id, type: "article", text: "Logged article", title: a.title, ts: a.updatedAt || a.createdAt,
-    })),
-  ].sort((a, b) => {
-    const ta = a.ts?.toDate ? a.ts.toDate() : new Date(0);
-    const tb = b.ts?.toDate ? b.ts.toDate() : new Date(0);
-    return tb - ta;
-  }).slice(0, 10);
+
 
   const cardStyle = { background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, overflow: "hidden", marginBottom: 10 };
   const sectionHeading = { fontSize: 15, color: "#444", fontWeight: 500, borderBottom: "1px solid #e0e0e0", padding: "14px 16px 10px" };
