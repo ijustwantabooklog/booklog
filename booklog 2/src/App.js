@@ -13,7 +13,6 @@ import AllArticles from "./components/AllArticles";
 import ShelfView from "./components/ShelfView";
 import UsernameSetup from "./components/UsernameSetup";
 import Following from "./components/Following";
-import PublicProfile from "./components/PublicProfile";
 import Profile from "./components/Profile";
 import "./App.css";
 
@@ -107,7 +106,7 @@ export default function App() {
     <>
       <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
         onNew={(type) => { setLogType(type); setEditing(null); setView("log"); }} onSignOut={signOutUser} />
-      <PublicProfile viewUserId={viewingUser.id} viewUsername={viewingUser.username}
+      <Profile userId={viewingUser.id} username={viewingUser.username}
         currentUserId={user.uid} onBack={() => setView("main")} />
     </>
   );
@@ -137,7 +136,7 @@ export default function App() {
       {page === "books" && <AllBooks userId={user.uid} onSelect={(id) => { setSelected(id); setView("detail"); }} />}
       {page === "articles" && <AllArticles userId={user.uid} onSelect={(id) => { setSelected(id); setView("article-detail"); }} />}
       {page === "following" && <Following userId={user.uid} onViewProfile={(id, uname) => { setViewingUser({ id, username: uname }); setView("public-profile"); }} />}
-      {page === "profile" && <Profile userId={user.uid} username={username} onSelectBook={(id) => { setSelected(id); setView("detail"); }} onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }} />}
+      {page === "profile" && <Profile userId={user.uid} username={username} currentUserId={user.uid} onSelectBook={(id) => { setSelected(id); setView("detail"); }} onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }} />}
     </>
   );
 }
