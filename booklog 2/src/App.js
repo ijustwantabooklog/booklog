@@ -12,6 +12,8 @@ import AllBooks from "./components/AllBooks";
 import AllArticles from "./components/AllArticles";
 import ShelfView from "./components/ShelfView";
 import UsernameSetup from "./components/UsernameSetup";
+import Projects from "./components/Projects";
+import ProjectDetail from "./components/ProjectDetail";
 import Following from "./components/Following";
 import Profile from "./components/Profile";
 import "./App.css";
@@ -28,6 +30,7 @@ export default function App() {
   const [logType, setLogType] = useState("book");
   const [shelfFilter, setShelfFilter] = useState(null);
   const [viewingUser, setViewingUser] = useState(null);
+  const [viewingProject, setViewingProject] = useState(null);
   const [shelfFilterType, setShelfFilterType] = useState(null);
 
   useEffect(() => {
@@ -102,6 +105,17 @@ export default function App() {
     </>
   );
 
+  if (view === "project-detail" && viewingProject) return (
+    <>
+      <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
+        onNew={(type) => { setLogType(type); setEditing(null); setView("log"); }} onSignOut={signOutUser} />
+      <ProjectDetail projectId={viewingProject} userId={user.uid}
+        onBack={() => { setView("main"); setPage("projects"); }}
+        onSelectBook={(id) => { setSelected(id); setView("detail"); }}
+        onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }} />
+    </>
+  );
+
   if (view === "public-profile" && viewingUser) return (
     <>
       <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
@@ -130,12 +144,14 @@ export default function App() {
           onSelect={(id) => { setSelected(id); setView("detail"); }}
           onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }}
           onShelfClick={(shelf) => { setShelfFilter(shelf); setShelfFilterType("shelf"); setView("shelf-view"); }}
-          onTagClick={(tag) => { setShelfFilter(tag); setShelfFilterType("tag"); setView("shelf-view"); }} />
+          onTagClick={(tag) => { setShelfFilter(tag); setShelfFilterType("tag"); setView("shelf-view"); }}
+          onViewProject={(id) => { setViewingProject(id); setView("project-detail"); }} />
       )}
       {page === "diary" && <Diary userId={user.uid} onSelectBook={(id) => { setSelected(id); setView("detail"); }} onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }} />}
       {page === "books" && <AllBooks userId={user.uid} onSelect={(id) => { setSelected(id); setView("detail"); }} />}
       {page === "articles" && <AllArticles userId={user.uid} onSelect={(id) => { setSelected(id); setView("article-detail"); }} />}
       {page === "following" && <Following userId={user.uid} onViewProfile={(id, uname) => { setViewingUser({ id, username: uname }); setView("public-profile"); }} />}
+      {page === "projects" && <Projects userId={user.uid} onViewProject={(id) => { setViewingProject(id); setView("project-detail"); }} />}
       {page === "profile" && <Profile userId={user.uid} username={username} currentUserId={user.uid} onSelectBook={(id) => { setSelected(id); setView("detail"); }} onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }} onNavigate={(p) => setPage(p)} onShelfClick={(shelf) => { setShelfFilter(shelf); setShelfFilterType("shelf"); setView("shelf-view"); }} />}
     </>
   );
@@ -170,7 +186,7 @@ function Nav({ username, page, setPage, onNew, onSignOut }) {
         </div>
       </div>
       <div style={{ display: "flex", gap: 20, padding: "12px 0 20px" }}>
-        {[["home","Home"],["diary","Diary"],["books","Books"],["articles","Articles"],["following","Following"]].map(([p, label]) => (
+        {[["home","Home"],["diary","Diary"],["books","Books"],["articles","Articles"],["following","Following"],["projects","Projects"]].map(([p, label]) => (
           <span key={p} onClick={() => setPage(p)}
             style={{ fontSize: 15, color: page === p ? "#1a1a1a" : "#aaa", fontWeight: page === p ? 500 : 400, cursor: "pointer" }}>
             {label}
