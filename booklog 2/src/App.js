@@ -12,6 +12,7 @@ import AllBooks from "./components/AllBooks";
 import AllArticles from "./components/AllArticles";
 import ShelfView from "./components/ShelfView";
 import UsernameSetup from "./components/UsernameSetup";
+import Profile from "./components/Profile";
 import "./App.css";
 
 export default function App() {
@@ -123,6 +124,7 @@ export default function App() {
       {page === "diary" && <Diary userId={user.uid} onSelectBook={(id) => { setSelected(id); setView("detail"); }} />}
       {page === "books" && <AllBooks userId={user.uid} onSelect={(id) => { setSelected(id); setView("detail"); }} />}
       {page === "articles" && <AllArticles userId={user.uid} onSelect={(id) => { setSelected(id); setView("article-detail"); }} />}
+      {page === "profile" && <Profile userId={user.uid} username={username} onSelectBook={(id) => { setSelected(id); setView("detail"); }} onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }} />}
     </>
   );
 }
@@ -156,7 +158,7 @@ function Nav({ username, page, setPage, onNew, onSignOut }) {
         </div>
       </div>
       <div style={{ display: "flex", gap: 20, padding: "12px 0 20px" }}>
-        {[["home","Home"],["diary","Diary"],["books","Books"],["articles","Articles"]].map(([p, label]) => (
+        {[["home","Home"],["diary","Diary"],["books","Books"],["articles","Articles"],["profile","Profile"]].map(([p, label]) => (
           <span key={p} onClick={() => setPage(p)}
             style={{ fontSize: 15, color: page === p ? "#1a1a1a" : "#aaa", fontWeight: page === p ? 500 : 400, cursor: "pointer" }}>
             {label}
