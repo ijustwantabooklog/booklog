@@ -181,7 +181,7 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
         {/* quotes */}
         <div style={{ ...card }}>
           {form.quotes.map((q, i) => (
-            <div key={i} style={{ padding: "10px 16px", borderBottom: "0.5px solid #e8e8e8" }}>
+            <div key={i} style={{ padding: "10px 16px", borderBottom: "0.5px solid #e8e8e8", background: "#f9f9f9" }}>
               <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
                 <span style={{ fontSize: 14, color: "#e8318a", minWidth: 40, paddingTop: 2 }}>{q.page || "—"}</span>
                 <span style={{ fontSize: 14, color: "#333", flex: 1, lineHeight: 1.5 }}>{q.text}</span>
