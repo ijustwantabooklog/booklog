@@ -66,17 +66,42 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
           {book.coverUrl
             ? <img src={book.coverUrl} alt={book.title} style={{ width: 100, height: 140, objectFit: "cover", borderRadius: 3, flexShrink: 0 }} />
             : <div style={{ width: 100, height: 140, background: "#e0e0e0", borderRadius: 3, flexShrink: 0 }} />}
-          <div style={{ flex: 1 }}>
-            <h1 style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 400, margin: "0 0 6px", color: "#1a1a1a", lineHeight: 1.2 }}>{book.title}</h1>
-            <div style={{ fontSize: 14, color: "#555", marginBottom: 12 }}>
-              {book.author}{book.translator ? `, translation by ${book.translator}` : ""}. {book.year}.
-            </div>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 140 }}>
+            <div>
+              <h1 style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 400, margin: "0 0 6px", color: "#1a1a1a", lineHeight: 1.2 }}>{book.title}</h1>
+              <div style={{ fontSize: 14, color: "#555", marginBottom: 8 }}>
+                {book.author}{book.translator ? `, translation by ${book.translator}` : ""}. {book.year}.
+              </div>
+              {book.partialRead && (
+              <div style={{ fontSize: 13, color: "#e8318a", marginTop: 4, fontStyle: "italic" }}>
+                {book.section ? book.section : "Partial read"}
+              </div>
+            )}
             {book.rating > 0 && <StarDisplay value={book.rating} size={20} />}
+            </div>
+            <div style={{ marginTop: "auto", paddingTop: 12 }}>
+              {!book.currentlyReading && (
+                <div style={{ fontSize: 12, color: "#aaa", marginBottom: 6 }}>read on {book.dateRead}.</div>
+              )}
+              <button onClick={() => setShowCitation(p => !p)}
+                style={{ background: "none", border: "1px solid #e0e0e0", borderRadius: 6, padding: "5px 12px", fontSize: 12, color: "#888", cursor: "pointer" }}>
+                {showCitation ? "hide citation" : "MLA citation"}
+              </button>
+            </div>
           </div>
         </div>
 
+        {showCitation && (
+          <div style={{ marginBottom: 16, background: "#f7f7f7", borderRadius: 6, padding: "12px 14px" }}>
+            <p style={{ fontSize: 13, color: "#444", lineHeight: 1.6, fontStyle: "italic", margin: "0 0 8px" }}>{generateMLA()}</p>
+            <button onClick={copyCitation} style={{ background: "none", border: "none", fontSize: 12, color: copied ? "#e8318a" : "#aaa", cursor: "pointer", padding: 0 }}>
+              {copied ? "copied!" : "copy"}
+            </button>
+          </div>
+        )}
+
         {(shelves.length > 0 || tags.length > 0) && (
-          <div style={{ marginTop: 16, fontSize: 13, color: "#555", lineHeight: 1.8 }}>
+          <div style={{ fontSize: 13, color: "#555", lineHeight: 1.8 }}>
             {shelves.length > 0 && (
               <div><span style={{ color: "#aaa" }}>Shelves: </span>{shelves.join(", ")}</div>
             )}
@@ -85,25 +110,6 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
             )}
           </div>
         )}
-
-        {!book.currentlyReading && (
-          <div style={{ fontSize: 12, color: "#aaa", marginTop: 12 }}>read on {book.dateRead}.</div>
-        )}
-
-        <div style={{ marginTop: 16 }}>
-          <button onClick={() => setShowCitation(p => !p)}
-            style={{ background: "none", border: "1px solid #e0e0e0", borderRadius: 6, padding: "5px 12px", fontSize: 12, color: "#888", cursor: "pointer" }}>
-            {showCitation ? "hide citation" : "MLA citation"}
-          </button>
-          {showCitation && (
-            <div style={{ marginTop: 10, background: "#f7f7f7", borderRadius: 6, padding: "12px 14px" }}>
-              <p style={{ fontSize: 13, color: "#444", lineHeight: 1.6, fontStyle: "italic", margin: "0 0 8px" }}>{generateMLA()}</p>
-              <button onClick={copyCitation} style={{ background: "none", border: "none", fontSize: 12, color: copied ? "#e8318a" : "#aaa", cursor: "pointer", padding: 0 }}>
-                {copied ? "copied!" : "copy"}
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
       {(notes || book.quotes?.length > 0) && (
