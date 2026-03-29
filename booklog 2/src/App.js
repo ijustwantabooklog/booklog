@@ -10,6 +10,7 @@ import ArticleDetail from "./components/ArticleDetail";
 import Diary from "./components/Diary";
 import AllBooks from "./components/AllBooks";
 import AllArticles from "./components/AllArticles";
+import ShelfView from "./components/ShelfView";
 import UsernameSetup from "./components/UsernameSetup";
 import "./App.css";
 
@@ -22,7 +23,9 @@ export default function App() {
   const [page, setPage] = useState("home");
   const [selected, setSelected] = useState(null);
   const [editing, setEditing] = useState(null);
-  const [logType, setLogType] = useState("book"); // "book" | "article"
+  const [logType, setLogType] = useState("book");
+  const [shelfFilter, setShelfFilter] = useState(null);
+  const [shelfFilterType, setShelfFilterType] = useState(null);
 
   useEffect(() => {
     return onAuthStateChanged(auth, (u) => {
@@ -61,30 +64,20 @@ export default function App() {
     </div>
   );
 
-  if (!username) return (
-    <UsernameSetup userId={user.uid} onComplete={(u) => setUsername(u)} />
-  );
+  if (!username) return <UsernameSetup userId={user.uid} onComplete={(u) => setUsername(u)} />;
+
+  const goBack = () => setView("main");
 
   if (view === "log") {
     if (logType === "article") return (
-      <ArticleLogForm
-        article={editing}
-        userId={user.uid}
+      <ArticleLogForm article={editing} userId={user.uid}
         onCancel={() => { setView(editing?.id ? "article-detail" : "main"); setEditing(null); }}
-        onSave={(a) => { setEditing(null); setSelected(a.id); setView("article-detail"); }}
-      />
+        onSave={(a) => { setEditing(null); setSelected(a.id); setView("article-detail"); }} />
     );
     return (
-      <LogForm
-        book={editing}
-        userId={user.uid}
+      <LogForm book={editing} userId={user.uid}
         onCancel={() => { setView(editing?.id ? "detail" : "main"); setEditing(null); }}
-        onSave={(book) => {
-          setEditing(null);
-          if (book?.id) { setSelected(book.id); setView("detail"); }
-          else setView("main");
-        }}
-      />
+        onSave={(book) => { setEditing(null); if (book?.id) { setSelected(book.id); setView("detail"); } else setView("main"); }} />
     );
   }
 
@@ -92,8 +85,7 @@ export default function App() {
     <>
       <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
         onNew={(type) => { setLogType(type); setEditing(null); setView("log"); }} onSignOut={signOutUser} />
-      <BookDetail bookId={selected} userId={user.uid}
-        onBack={() => setView("main")}
+      <BookDetail bookId={selected} userId={user.uid} onBack={goBack}
         onEdit={(book) => { setLogType("book"); setEditing(book); setView("log"); }} />
     </>
   );
@@ -102,9 +94,18 @@ export default function App() {
     <>
       <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
         onNew={(type) => { setLogType(type); setEditing(null); setView("log"); }} onSignOut={signOutUser} />
-      <ArticleDetail articleId={selected} userId={user.uid}
-        onBack={() => setView("main")}
+      <ArticleDetail articleId={selected} userId={user.uid} onBack={goBack}
         onEdit={(a) => { setLogType("article"); setEditing(a); setView("log"); }} />
+    </>
+  );
+
+  if (view === "shelf-view") return (
+    <>
+      <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
+        onNew={(type) => { setLogType(type); setEditing(null); setView("log"); }} onSignOut={signOutUser} />
+      <ShelfView userId={user.uid} filter={shelfFilter} filterType={shelfFilterType}
+        onSelect={(id) => { setSelected(id); setView("detail"); }}
+        onBack={goBack} />
     </>
   );
 
@@ -112,7 +113,13 @@ export default function App() {
     <>
       <Nav username={username} page={page} setPage={setPage}
         onNew={(type) => { setLogType(type); setEditing(null); setView("log"); }} onSignOut={signOutUser} />
-      {page === "home" && <BookList userId={user.uid} onSelect={(id) => { setSelected(id); setView("detail"); }} />}
+      {page === "home" && (
+        <BookList userId={user.uid}
+          onSelect={(id) => { setSelected(id); setView("detail"); }}
+          onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }}
+          onShelfClick={(shelf) => { setShelfFilter(shelf); setShelfFilterType("shelf"); setView("shelf-view"); }}
+          onTagClick={(tag) => { setShelfFilter(tag); setShelfFilterType("tag"); setView("shelf-view"); }} />
+      )}
       {page === "diary" && <Diary userId={user.uid} onSelectBook={(id) => { setSelected(id); setView("detail"); }} />}
       {page === "books" && <AllBooks userId={user.uid} onSelect={(id) => { setSelected(id); setView("detail"); }} />}
       {page === "articles" && <AllArticles userId={user.uid} onSelect={(id) => { setSelected(id); setView("article-detail"); }} />}
@@ -122,7 +129,6 @@ export default function App() {
 
 function Nav({ username, page, setPage, onNew, onSignOut }) {
   const [showDropdown, setShowDropdown] = useState(false);
-
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0 10px" }}>
@@ -138,15 +144,11 @@ function Nav({ username, page, setPage, onNew, onSignOut }) {
                 <div onClick={() => { onNew("book"); setShowDropdown(false); }}
                   style={{ padding: "10px 16px", fontSize: 14, cursor: "pointer", color: "#444" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                  onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                  Book
-                </div>
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}>Book</div>
                 <div onClick={() => { onNew("article"); setShowDropdown(false); }}
                   style={{ padding: "10px 16px", fontSize: 14, cursor: "pointer", color: "#444", borderTop: "0.5px solid #ebebeb" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                  onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                  Article
-                </div>
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}>Article</div>
               </div>
             )}
           </div>
@@ -154,7 +156,7 @@ function Nav({ username, page, setPage, onNew, onSignOut }) {
         </div>
       </div>
       <div style={{ display: "flex", gap: 20, padding: "12px 0 20px" }}>
-        {[["home", "Home"], ["diary", "Diary"], ["books", "Books"], ["articles", "Articles"]].map(([p, label]) => (
+        {[["home","Home"],["diary","Diary"],["books","Books"],["articles","Articles"]].map(([p, label]) => (
           <span key={p} onClick={() => setPage(p)}
             style={{ fontSize: 15, color: page === p ? "#1a1a1a" : "#aaa", fontWeight: page === p ? 500 : 400, cursor: "pointer" }}>
             {label}
