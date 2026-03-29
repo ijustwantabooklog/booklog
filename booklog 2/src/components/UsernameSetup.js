@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { db } from "../firebase";
-import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 
 export default function UsernameSetup({ userId, onComplete }) {
   const [username, setUsername] = useState("");
@@ -16,10 +16,9 @@ export default function UsernameSetup({ userId, onComplete }) {
     setChecking(true);
     setError("");
 
-    // Check uniqueness
-    const q = query(collection(db, "usernames"), where("username", "==", trimmed));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
+    // Check uniqueness by document ID
+    const usernameDoc = await getDoc(doc(db, "usernames", trimmed));
+    if (usernameDoc.exists()) {
       setError("That username is already taken, try another.");
       setChecking(false);
       return;
