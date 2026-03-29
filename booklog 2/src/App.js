@@ -134,7 +134,7 @@ function Nav({ username, page, setPage, onNew, onSignOut }) {
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0 10px" }}>
-        <span style={{ fontSize: 22, color: "#444" }}>Book Log / {username}</span>
+        <span style={{ fontSize: 22, color: "#444" }}>Book Log / <span onClick={() => setPage("profile")} style={{ cursor: "pointer", textDecoration: "underline" }}>{username}</span></span>
         <div style={{ display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
           <div style={{ position: "relative" }}>
             <button onClick={() => setShowDropdown(p => !p)}
@@ -158,7 +158,7 @@ function Nav({ username, page, setPage, onNew, onSignOut }) {
         </div>
       </div>
       <div style={{ display: "flex", gap: 20, padding: "12px 0 20px" }}>
-        {[["home","Home"],["diary","Diary"],["books","Books"],["articles","Articles"],["profile","Profile"]].map(([p, label]) => (
+        {[["home","Home"],["diary","Diary"],["books","Books"],["articles","Articles"]].map(([p, label]) => (
           <span key={p} onClick={() => setPage(p)}
             style={{ fontSize: 15, color: page === p ? "#1a1a1a" : "#aaa", fontWeight: page === p ? 500 : 400, cursor: "pointer" }}>
             {label}
