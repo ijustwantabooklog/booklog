@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { logActivity } from "../activityLogger";
 
 async function fetchMetadata(input) {
   try {
@@ -108,11 +109,14 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
     const data = { ...form, updatedAt: serverTimestamp() };
     try {
       if (article?.id) {
+        const prev = article;
         await updateDoc(doc(db, "users", userId, "articles", article.id), data);
+        if ((data.quotes || []).length > (prev.quotes || []).length) await logActivity(userId, "quote", { text: "Added a quote to", articleTitle: data.title, articleId: article.id });
         onSave({ id: article.id, ...data });
       } else {
         data.createdAt = serverTimestamp();
         const ref = await addDoc(collection(db, "users", userId, "articles"), data);
+        await logActivity(userId, "logged_article", { text: "Logged article", articleTitle: data.title, articleId: ref.id });
         onSave({ id: ref.id, ...data });
       }
     } catch (e) { console.error(e); setSaving(false); }
