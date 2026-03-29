@@ -85,9 +85,17 @@ function Nav({ firstName, page, setPage, onNew, onSignOut }) {
           <span onClick={onSignOut} style={{ fontSize: 13, color: "#aaa", cursor: "pointer" }}>sign out</span>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 24, paddingBottom: 12 }}>
-        <span onClick={() => setPage("home")} style={{ fontSize: 15, color: page === "home" ? "#444" : "#aaa", fontWeight: page === "home" ? 500 : 400, cursor: "pointer" }}>Home</span>
-        <span onClick={() => setPage("diary")} style={{ fontSize: 15, color: page === "diary" ? "#444" : "#aaa", fontWeight: page === "diary" ? 500 : 400, cursor: "pointer" }}>Diary</span>
+      <div style={{ display: "flex", gap: 0, borderBottom: "1.5px solid #e0e0e0", marginTop: 4 }}>
+        {["home", "diary"].map(p => (
+          <span key={p} onClick={() => setPage(p)} style={{
+            fontSize: 15, cursor: "pointer", padding: "14px 24px 14px 0",
+            color: page === p ? "#1a1a1a" : "#aaa",
+            borderBottom: page === p ? "2.5px solid #e8318a" : "2.5px solid transparent",
+            marginBottom: "-1.5px", display: "inline-block",
+          }}>
+            {p.charAt(0).toUpperCase() + p.slice(1)}
+          </span>
+        ))}
       </div>
     </div>
   );
