@@ -205,10 +205,14 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
                 placeholder="pg" style={{ ...bareInput, width: 48, flexShrink: 0, color: "#e8318a", fontSize: 14 }} />
               <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
                 <textarea id="art-quote-text" value={newQuoteText} onChange={e => setNewQuoteText(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addQuote(); } }}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addQuote(); }
+                    if (e.key === "Tab") { e.preventDefault(); document.getElementById("art-quote-note")?.focus(); }
+                  }}
                   placeholder="Quote" rows={2}
                   style={{ ...bareInput, resize: "none", lineHeight: 1.5, fontSize: 14 }} />
-                <input value={newQuoteNote} onChange={e => setNewQuoteNote(e.target.value)}
+                <input id="art-quote-note" value={newQuoteNote} onChange={e => setNewQuoteNote(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addQuote(); } }}
                   placeholder="Note (optional)"
                   style={{ ...bareInput, fontSize: 13, color: "#888", borderTop: "0.5px solid #eee", paddingTop: 6 }} />
               </div>
