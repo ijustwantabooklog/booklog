@@ -31,22 +31,33 @@ export default function ArticleDetail({ articleId, userId, onBack, onEdit }) {
 
       <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, padding: "24px" }}>
         <div style={{ fontSize: 11, color: "#aaa", marginBottom: 6 }}>article</div>
-        <h1 style={{ fontFamily: "Georgia, serif", fontSize: 24, fontWeight: 400, margin: "0 0 8px", color: "#1a1a1a", lineHeight: 1.3 }}>{article.title}</h1>
+
+        <h1 style={{ fontFamily: "Georgia, serif", fontSize: 24, fontWeight: 400, margin: "0 0 10px", color: "#1a1a1a", lineHeight: 1.3 }}>
+          {article.title}
+        </h1>
+
         <div style={{ fontSize: 14, color: "#555", marginBottom: 4 }}>
           {article.author}{article.publication ? ` · ${article.publication}` : ""}
         </div>
-        {article.datePublished && <div style={{ fontSize: 13, color: "#aaa", marginBottom: 12 }}>{article.datePublished}</div>}
+
+        {article.datePublished && (
+          <div style={{ fontSize: 13, color: "#aaa", marginBottom: 10 }}>{article.datePublished}</div>
+        )}
+
         {article.url && (
-          <a href={article.url} target="_blank" rel="noopener noreferrer"
+          <a href={article.url.startsWith("http") ? article.url : `https://doi.org/${article.url}`}
+            target="_blank" rel="noopener noreferrer"
             style={{ fontSize: 13, color: "#0000ee", display: "block", marginBottom: 16, wordBreak: "break-all" }}>
             {article.url}
           </a>
         )}
 
-        {article.notes && <p style={{ fontSize: 14, color: "#333", lineHeight: 1.7, margin: "0 0 16px" }}>{article.notes}</p>}
+        {article.notes && (
+          <p style={{ fontSize: 14, color: "#333", lineHeight: 1.7, margin: "16px 0" }}>{article.notes}</p>
+        )}
 
         {article.quotes?.length > 0 && (
-          <div style={{ margin: "0 0 20px" }}>
+          <div style={{ margin: "16px 0" }}>
             {article.quotes.map((q, i) => (
               <div key={i} style={{ padding: "10px 0", borderBottom: "0.5px solid #f0f0f0" }}>
                 <div style={{ display: "flex", gap: 20, alignItems: "baseline" }}>
@@ -61,7 +72,7 @@ export default function ArticleDetail({ articleId, userId, onBack, onEdit }) {
           </div>
         )}
 
-        <div style={{ fontSize: 12, color: "#aaa", marginTop: 12 }}>logged {article.dateRead}.</div>
+        <div style={{ fontSize: 12, color: "#aaa", marginTop: 16 }}>logged {article.dateRead}.</div>
       </div>
     </div>
   );
