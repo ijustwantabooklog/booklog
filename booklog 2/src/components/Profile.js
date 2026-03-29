@@ -8,7 +8,7 @@ function formatActivityDate(ts) {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
-export default function Profile({ userId, username, currentUserId, onBack, onSelectBook, onSelectArticle }) {
+export default function Profile({ userId, username, currentUserId, onBack, onSelectBook, onSelectArticle, onNavigate, onShelfClick }) {
   const isOwnProfile = userId === currentUserId;
 
   const [profile, setProfile] = useState({ bio: "" });
@@ -122,8 +122,18 @@ export default function Profile({ userId, username, currentUserId, onBack, onSel
 
         {/* Stats */}
         <div style={{ display: "flex", gap: 24, marginTop: 16, paddingTop: 14, borderTop: "0.5px solid #f0f0f0" }}>
-          <div style={{ fontSize: 13, color: "#888" }}><span style={{ fontSize: 18, color: "#444", marginRight: 4 }}>{books.length}</span>books</div>
-          <div style={{ fontSize: 13, color: "#888" }}><span style={{ fontSize: 18, color: "#444", marginRight: 4 }}>{articles.length}</span>articles</div>
+          <div onClick={() => isOwnProfile && onNavigate && onNavigate("books")}
+            style={{ fontSize: 13, color: "#888", cursor: isOwnProfile ? "pointer" : "default" }}
+            onMouseEnter={e => { if (isOwnProfile) e.currentTarget.style.color = "#e8318a"; }}
+            onMouseLeave={e => e.currentTarget.style.color = "#888"}>
+            <span style={{ fontSize: 18, color: "#444", marginRight: 4 }}>{books.length}</span>books
+          </div>
+          <div onClick={() => isOwnProfile && onNavigate && onNavigate("articles")}
+            style={{ fontSize: 13, color: "#888", cursor: isOwnProfile ? "pointer" : "default" }}
+            onMouseEnter={e => { if (isOwnProfile) e.currentTarget.style.color = "#e8318a"; }}
+            onMouseLeave={e => e.currentTarget.style.color = "#888"}>
+            <span style={{ fontSize: 18, color: "#444", marginRight: 4 }}>{articles.length}</span>articles
+          </div>
           {!isOwnProfile && <div style={{ fontSize: 13, color: "#888" }}><span style={{ fontSize: 18, color: "#444", marginRight: 4 }}>{followerCount}</span>followers</div>}
           {isOwnProfile && (
             <div style={{ fontSize: 13, color: "#888" }}>
@@ -163,8 +173,11 @@ export default function Profile({ userId, username, currentUserId, onBack, onSel
         <div style={cardStyle}>
           <div style={sectionHeading}>Shelves</div>
           {shelves.map((shelf, i) => (
-            <div key={shelf} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: i === shelves.length - 1 ? "none" : "0.5px solid #ebebeb" }}>
-              <span style={{ fontSize: 14, color: "#444" }}>{shelf}</span>
+            <div key={shelf} onClick={() => onShelfClick && onShelfClick(shelf)}
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: i === shelves.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
+              onMouseLeave={e => e.currentTarget.style.background = "none"}>
+              <span style={{ fontSize: 14, color: "#0000ee", textDecoration: "underline" }}>{shelf}</span>
               <span style={{ fontSize: 12, color: "#aaa" }}>{books.filter(b => (b.shelves || []).includes(shelf)).length}</span>
             </div>
           ))}
