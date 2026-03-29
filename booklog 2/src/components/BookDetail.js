@@ -56,26 +56,6 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
           </div>
         </div>
 
-        {notes && <p style={{ fontSize: 14, color: "#333", lineHeight: 1.7, margin: "0 0 16px" }}>{notes}</p>}
-
-        {book.quotes?.length > 0 && (
-          <div style={{ margin: "0 0 20px" }}>
-            {book.quotes.map((q, i) => (
-              <div key={i} style={{ padding: "10px 0", borderBottom: "0.5px solid #f0f0f0" }}>
-                <div style={{ display: "flex", gap: 20, alignItems: "baseline" }}>
-                  <span style={{ fontSize: 13, color: "#e8318a", minWidth: 36, flexShrink: 0 }}>{q.page}</span>
-                  <span style={{ fontSize: 14, color: "#444", lineHeight: 1.5, flex: 1 }}>{q.text}</span>
-                </div>
-                {q.quoteNote && (
-                  <div style={{ marginLeft: 56, marginTop: 5, fontSize: 13, color: "#888", fontStyle: "italic", lineHeight: 1.5 }}>
-                    {q.quoteNote}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
         {(shelves.length > 0 || tags.length > 0) && (
           <div style={{ marginTop: 16, fontSize: 13, color: "#555", lineHeight: 1.8 }}>
             {shelves.length > 0 && (
@@ -91,6 +71,27 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
           <div style={{ fontSize: 12, color: "#aaa", marginTop: 12 }}>read on {book.dateRead}.</div>
         )}
       </div>
+
+      {(notes || book.quotes?.length > 0) && (
+        <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, padding: "24px", marginTop: 10 }}>
+          {notes && <p style={{ fontSize: 14, color: "#333", lineHeight: 1.7, margin: "0 0 16px" }}>{notes}</p>}
+          {book.quotes?.length > 0 && (
+            <div>
+              {book.quotes.map((q, i) => (
+                <div key={i} style={{ padding: "10px 0", borderBottom: i === book.quotes.length - 1 ? "none" : "0.5px solid #f0f0f0" }}>
+                  <div style={{ display: "flex", gap: 20, alignItems: "baseline" }}>
+                    <span style={{ fontSize: 13, color: "#e8318a", minWidth: 36, flexShrink: 0 }}>{q.page}</span>
+                    <span style={{ fontSize: 14, color: "#444", lineHeight: 1.5, flex: 1 }}>{q.text}</span>
+                  </div>
+                  {q.quoteNote && (
+                    <div style={{ marginLeft: 56, marginTop: 5, fontSize: 13, color: "#888", fontStyle: "italic", lineHeight: 1.5 }}>{q.quoteNote}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
