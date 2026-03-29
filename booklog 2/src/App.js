@@ -59,7 +59,7 @@ export default function App() {
 
   if (!user) return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", gap: 16 }}>
-      <span style={{ fontSize: 28, color: "#444" }}>Book Log</span>
+      <span style={{ fontSize: 28, color: "#444" }}>Reading Archive</span>
       <p style={{ color: "#888", fontSize: 15, margin: 0 }}>your reading log</p>
       <button onClick={signIn} style={{ marginTop: 12, background: "#e8318a", color: "#fff", border: "none", borderRadius: 6, padding: "10px 24px", fontSize: 15, cursor: "pointer" }}>
         Sign in with Google
@@ -146,7 +146,7 @@ function Nav({ username, page, setPage, onNew, onSignOut }) {
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0 10px" }}>
-        <span style={{ fontSize: 22, color: "#444" }}>Book Log / <span onClick={() => setPage("profile")} style={{ cursor: "pointer" }} onMouseEnter={e => e.currentTarget.style.color = "#e8318a"} onMouseLeave={e => e.currentTarget.style.color = "#444"}>{username}</span></span>
+        <span style={{ fontSize: 22, color: "#444" }}>Reading Archive / <span onClick={() => setPage("profile")} style={{ cursor: "pointer" }} onMouseEnter={e => e.currentTarget.style.color = "#e8318a"} onMouseLeave={e => e.currentTarget.style.color = "#444"}>{username}</span></span>
         <div style={{ display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
           <div style={{ position: "relative" }}>
             <button onClick={() => setShowDropdown(p => !p)}
