@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { doc, onSnapshot, deleteDoc, collection, query, orderBy, addDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { logActivity } from "../activityLogger";
 
 function StarDisplay({ value, size = 20 }) {
   return (
@@ -45,6 +46,7 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
       text: newRumination.trim(),
       createdAt: serverTimestamp(),
     });
+    await logActivity(userId, "rumination", { text: "Added a rumination to", bookTitle: book?.title, bookId });
     setNewRumination("");
   };
 
