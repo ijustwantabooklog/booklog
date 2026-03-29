@@ -95,9 +95,10 @@ export default function BookList({ userId, onSelect, onSelectArticle, onShelfCli
       const date = formatActivityDate(book.updatedAt || book.createdAt);
       let text = "Logged";
       if (book.currentlyReading) text = "Marked as currently reading";
+      else if (book.partialRead) text = `Read${book.section ? " " + book.section + " of" : " part of"}`;
       else if (book.rating > 0 && book.notes) text = "Read and reviewed";
       else if (book.rating > 0) text = "Read and rated";
-      return { id: book.id, type: "book", text, title: book.title, date, ts: book.updatedAt || book.createdAt };
+      return { id: book.id, type: "book", text, title: book.title, section: null, date, ts: book.updatedAt || book.createdAt };
     }),
     ...articles.map(article => ({
       id: article.id, type: "article", text: "Logged article",
@@ -167,7 +168,7 @@ export default function BookList({ userId, onSelect, onSelectArticle, onShelfCli
                     style={{ padding: "12px 16px", borderBottom: i === allActivity.length - 1 ? "none" : "0.5px solid #ebebeb", fontSize: 14, color: "#444", cursor: "pointer", lineHeight: 1.5 }}
                     onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
                     onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                    {entry.text} <strong style={{ color: "#333" }}>{entry.title}</strong> on {entry.date}.
+                    {entry.text} <strong style={{ color: "#333" }}>{entry.title}</strong>{entry.section ? ` (${entry.section})` : ""} on {entry.date}.
                     {entry.type === "article" && <span style={{ fontSize: 11, color: "#e8318a", border: "1px solid #e8318a", borderRadius: 3, padding: "1px 6px", marginLeft: 8 }}>article</span>}
                   </div>
                 ))}
