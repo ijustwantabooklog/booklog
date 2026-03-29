@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, doc, getDoc } from "firebase/firestore";
 
 function StarDisplay({ value, size = 13 }) {
   return (
@@ -27,6 +27,8 @@ export default function BookList({ userId, onSelect, onSelectArticle, onShelfCli
   const [books, setBooks] = useState([]);
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activityTab, setActivityTab] = useState("mine");
+  const [followingActivity, setFollowingActivity] = useState([]);
 
   useEffect(() => {
     const q1 = query(collection(db, "users", userId, "books"), orderBy("createdAt", "desc"));
@@ -42,7 +44,44 @@ export default function BookList({ userId, onSelect, onSelectArticle, onShelfCli
       articlesLoaded = true;
       if (booksLoaded) setLoading(false);
     });
-    return () => { unsub1(); unsub2(); };
+    // Load following activity
+    const followingUnsub = onSnapshot(collection(db, "users", userId, "following"), async snap => {
+      const followingIds = snap.docs.map(d => d.id);
+      if (followingIds.length === 0) { setFollowingActivity([]); return; }
+      const allActivity = [];
+      await Promise.all(followingIds.map(async fid => {
+        const profileDoc = await getDoc(doc(db, "users", fid, "profile", "info"));
+        const username = profileDoc.exists() ? profileDoc.data().username : fid;
+        const booksSnap = await new Promise(resolve => {
+          const q = query(collection(db, "users", fid, "books"), orderBy("updatedAt", "desc"));
+          const unsub = onSnapshot(q, snap => { resolve(snap); unsub(); });
+        });
+        const articlesSnap = await new Promise(resolve => {
+          const q = query(collection(db, "users", fid, "articles"), orderBy("updatedAt", "desc"));
+          const unsub = onSnapshot(q, snap => { resolve(snap); unsub(); });
+        });
+        booksSnap.docs.slice(0, 5).forEach(d => {
+          const book = d.data();
+          let text = "logged";
+          if (book.currentlyReading) text = "marked as currently reading";
+          else if (book.rating > 0 && book.notes) text = "read and reviewed";
+          else if (book.rating > 0) text = "read and rated";
+          allActivity.push({ username, text, title: book.title, type: "book", ts: book.updatedAt || book.createdAt });
+        });
+        articlesSnap.docs.slice(0, 5).forEach(d => {
+          const article = d.data();
+          allActivity.push({ username, text: "logged article", title: article.title, type: "article", ts: article.updatedAt || article.createdAt });
+        });
+      }));
+      allActivity.sort((a, b) => {
+        const ta = a.ts?.toDate ? a.ts.toDate() : new Date(0);
+        const tb = b.ts?.toDate ? b.ts.toDate() : new Date(0);
+        return tb - ta;
+      });
+      setFollowingActivity(allActivity.slice(0, 20));
+    });
+
+    return () => { unsub1(); unsub2(); followingUnsub(); };
   }, [userId]);
 
   const shelves = [...new Set(books.flatMap(b => b.shelves || []).filter(Boolean))].sort();
@@ -111,17 +150,33 @@ export default function BookList({ userId, onSelect, onSelectArticle, onShelfCli
             </div>
           )}
 
-          {!loading && allActivity.length > 0 && (
+          {!loading && (allActivity.length > 0 || followingActivity.length > 0) && (
             <div>
-              <div style={{ fontSize: 15, color: "#444", fontWeight: 500, marginBottom: 10 }}>Activity</div>
+              <div style={{ display: "flex", gap: 0, marginBottom: 10 }}>
+                {["mine", "following"].map(tab => (
+                  <span key={tab} onClick={() => setActivityTab(tab)}
+                    style={{ fontSize: 15, color: activityTab === tab ? "#1a1a1a" : "#aaa", fontWeight: activityTab === tab ? 500 : 400, cursor: "pointer", marginRight: 16 }}>
+                    {tab === "mine" ? "My Activity" : "Following"}
+                  </span>
+                ))}
+              </div>
               <div style={cardStyle}>
-                {allActivity.map((entry, i) => (
+                {activityTab === "mine" && allActivity.map((entry, i) => (
                   <div key={`${entry.type}-${entry.id}`}
                     onClick={() => entry.type === "book" ? onSelect(entry.id) : onSelectArticle(entry.id)}
                     style={{ padding: "12px 16px", borderBottom: i === allActivity.length - 1 ? "none" : "0.5px solid #ebebeb", fontSize: 14, color: "#444", cursor: "pointer", lineHeight: 1.5 }}
                     onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
                     onMouseLeave={e => e.currentTarget.style.background = "none"}>
                     {entry.text} <strong style={{ color: "#333" }}>{entry.title}</strong> on {entry.date}.
+                    {entry.type === "article" && <span style={{ fontSize: 11, color: "#e8318a", border: "1px solid #e8318a", borderRadius: 3, padding: "1px 6px", marginLeft: 8 }}>article</span>}
+                  </div>
+                ))}
+                {activityTab === "following" && followingActivity.length === 0 && (
+                  <div style={{ padding: "16px", fontSize: 14, color: "#aaa" }}>No activity from people you follow yet.</div>
+                )}
+                {activityTab === "following" && followingActivity.map((entry, i) => (
+                  <div key={i} style={{ padding: "12px 16px", borderBottom: i === followingActivity.length - 1 ? "none" : "0.5px solid #ebebeb", fontSize: 14, color: "#444", lineHeight: 1.5 }}>
+                    <strong style={{ color: "#333", fontWeight: 500 }}>{entry.username}</strong> {entry.text} <strong style={{ color: "#333", fontWeight: 500 }}>{entry.title}</strong> on {formatActivityDate(entry.ts)}.
                     {entry.type === "article" && <span style={{ fontSize: 11, color: "#e8318a", border: "1px solid #e8318a", borderRadius: 3, padding: "1px 6px", marginLeft: 8 }}>article</span>}
                   </div>
                 ))}
