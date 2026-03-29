@@ -21,19 +21,21 @@ export default function Profile({ userId, username, currentUserId, onSelectBook,
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
   const [editingBio, setEditingBio] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [bioInput, setBioInput] = useState("");
 
   useEffect(() => {
     const unsub1 = onSnapshot(doc(db, "users", userId, "profile", "info"), d => {
       if (d.exists()) setProfile(d.data());
     });
+    let booksLoaded = false, articlesLoaded = false;
     const unsub2 = onSnapshot(
       query(collection(db, "users", userId, "books"), orderBy("createdAt", "desc")),
-      snap => setBooks(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      snap => { setBooks(snap.docs.map(d => ({ id: d.id, ...d.data() }))); booksLoaded = true; if (articlesLoaded) setLoading(false); }
     );
     const unsub3 = onSnapshot(
       query(collection(db, "users", userId, "articles"), orderBy("createdAt", "desc")),
-      snap => setArticles(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      snap => { setArticles(snap.docs.map(d => ({ id: d.id, ...d.data() }))); articlesLoaded = true; if (booksLoaded) setLoading(false); }
     );
     const unsub4 = onSnapshot(collection(db, "users", userId, "followers"), async snap => {
       setFollowerCount(snap.size);
