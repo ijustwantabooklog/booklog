@@ -137,7 +137,7 @@ export default function App() {
 
   return (
     <>
-      <Nav username={username} page={page} setPage={setPage}
+      <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
         onNew={(type) => { setLogType(type); setEditing(null); setView("log"); }} onSignOut={signOutUser} />
       {page === "home" && (
         <BookList userId={user.uid}
