@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
-import { collection, query, orderBy, onSnapshot, doc, getDoc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, doc, getDoc, updateDoc } from "firebase/firestore";
 
 function StarDisplay({ value, size = 13 }) {
   return (
@@ -134,17 +134,28 @@ export default function BookList({ userId, onSelect, onSelectArticle, onShelfCli
               <div style={{ fontSize: 15, color: "#444", fontWeight: 500, marginBottom: 10 }}>Currently Reading</div>
               <div style={cardStyle}>
                 {currentlyReading.map((book, i) => (
-                  <div key={book.id} onClick={() => onSelect(book.id)}
-                    style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 16px", borderBottom: i === currentlyReading.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: "pointer" }}
+                  <div key={book.id}
+                    style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 16px", borderBottom: i === currentlyReading.length - 1 ? "none" : "0.5px solid #ebebeb" }}
                     onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
                     onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                    {book.coverUrl
-                      ? <img src={book.coverUrl} alt={book.title} style={{ width: 36, height: 52, objectFit: "cover", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0 }} />
-                      : <div style={{ width: 36, height: 52, background: "#e8e8e8", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0 }} />}
-                    <div>
-                      <div style={{ fontSize: 15, color: "#0000ee", textDecoration: "underline", marginBottom: 2, fontFamily: "Georgia, serif" }}>{book.title}</div>
-                      <div style={{ fontSize: 13, color: "#444" }}>{book.author}</div>
+                    <div onClick={() => onSelect(book.id)} style={{ display: "flex", gap: 12, alignItems: "center", flex: 1, cursor: "pointer", minWidth: 0 }}>
+                      {book.coverUrl
+                        ? <img src={book.coverUrl} alt={book.title} style={{ width: 36, height: 52, objectFit: "cover", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0 }} />
+                        : <div style={{ width: 36, height: 52, background: "#e8e8e8", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0 }} />}
+                      <div>
+                        <div style={{ fontSize: 15, color: "#0000ee", textDecoration: "underline", marginBottom: 2, fontFamily: "Georgia, serif" }}>{book.title}</div>
+                        <div style={{ fontSize: 13, color: "#444" }}>{book.author}</div>
+                      </div>
                     </div>
+                    <button onClick={async (e) => {
+                      e.stopPropagation();
+                      const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+                      await updateDoc(doc(db, "users", userId, "books", book.id), { currentlyReading: false, dateRead: today });
+                    }} style={{ background: "none", border: "1px solid #e0e0e0", borderRadius: 6, padding: "4px 12px", fontSize: 12, color: "#888", cursor: "pointer", flexShrink: 0 }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = "#e8318a"; e.currentTarget.style.color = "#e8318a"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = "#e0e0e0"; e.currentTarget.style.color = "#888"; }}>
+                      Mark as read
+                    </button>
                   </div>
                 ))}
               </div>
