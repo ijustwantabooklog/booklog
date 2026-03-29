@@ -134,7 +134,7 @@ function Nav({ username, page, setPage, onNew, onSignOut }) {
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0 10px" }}>
-        <span style={{ fontSize: 22, color: "#444" }}>Book Log / <span onClick={() => setPage("profile")} style={{ cursor: "pointer", textDecoration: "underline" }}>{username}</span></span>
+        <span style={{ fontSize: 22, color: "#444" }}>Book Log / <span onClick={() => setPage("profile")} style={{ cursor: "pointer" }} onMouseEnter={e => e.currentTarget.style.color = "#e8318a"} onMouseLeave={e => e.currentTarget.style.color = "#444"}>{username}</span></span>
         <div style={{ display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
           <div style={{ position: "relative" }}>
             <button onClick={() => setShowDropdown(p => !p)}
