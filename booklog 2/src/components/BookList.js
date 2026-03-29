@@ -117,6 +117,28 @@ export default function BookList({ userId, onSelect }) {
         {/* Sidebar */}
         {(shelves.length > 0 || tags.length > 0) && (
           <div style={{ width: 190, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, marginTop: 26 }}>
+            {(() => {
+              const thisYear = new Date().getFullYear();
+              const totalLogged = books.length;
+              const thisYearLogged = books.filter(b => {
+                if (!b.dateRead) return false;
+                const d = new Date(b.dateRead);
+                return !isNaN(d) && d.getFullYear() === thisYear;
+              }).length;
+              return (
+                <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, overflow: "hidden" }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: "#444", borderBottom: "1px solid #e0e0e0", padding: "14px 16px 10px" }}>Stats</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "0.5px solid #ebebeb" }}>
+                    <span style={{ fontSize: 14, color: "#444" }}>Total logged</span>
+                    <span style={{ fontSize: 14, color: "#888" }}>{totalLogged}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px" }}>
+                    <span style={{ fontSize: 14, color: "#444" }}>{thisYear}</span>
+                    <span style={{ fontSize: 14, color: "#888" }}>{thisYearLogged}</span>
+                  </div>
+                </div>
+              );
+            })()}
             {shelves.length > 0 && (
               <div style={cardStyle}>
                 <div style={{ fontSize: 15, fontWeight: 600, color: "#444", borderBottom: "1px solid #e0e0e0", padding: "14px 16px 10px" }}>Shelves</div>
