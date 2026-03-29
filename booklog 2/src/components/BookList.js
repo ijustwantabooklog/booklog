@@ -29,6 +29,7 @@ export default function BookList({ userId, onSelect, onSelectArticle, onShelfCli
   const [loading, setLoading] = useState(true);
   const [activityTab, setActivityTab] = useState("mine");
   const [followingActivity, setFollowingActivity] = useState([]);
+  const [allActivity, setAllActivity] = useState([]);
 
   useEffect(() => {
     const q1 = query(collection(db, "users", userId, "books"), orderBy("createdAt", "desc"));
@@ -81,7 +82,7 @@ export default function BookList({ userId, onSelect, onSelectArticle, onShelfCli
       setFollowingActivity(allActivity.slice(0, 20));
     });
 
-    return () => { unsub1(); unsub2(); followingUnsub(); };
+    return () => { unsub1(); unsub2(); followingUnsub(); unsubActivity(); };
   }, [userId]);
 
   const shelves = [...new Set(books.flatMap(b => b.shelves || []).filter(Boolean))].sort();
@@ -89,27 +90,7 @@ export default function BookList({ userId, onSelect, onSelectArticle, onShelfCli
   const currentlyReading = books.filter(b => b.currentlyReading);
   const finished = books.filter(b => !b.currentlyReading);
 
-  // Activity from both books and articles
-  const allActivity = [
-    ...books.map(book => {
-      const date = formatActivityDate(book.updatedAt || book.createdAt);
-      let text = "Logged";
-      if (book.currentlyReading) text = "Marked as currently reading";
-      else if (book.partialRead) text = `Read${book.section ? " " + book.section + " of" : " part of"}`;
-      else if (book.rating > 0 && book.notes) text = "Read and reviewed";
-      else if (book.rating > 0) text = "Read and rated";
-      return { id: book.id, type: "book", text, title: book.title, section: null, date, ts: book.updatedAt || book.createdAt };
-    }),
-    ...articles.map(article => ({
-      id: article.id, type: "article", text: "Logged article",
-      title: article.title, date: formatActivityDate(article.updatedAt || article.createdAt),
-      ts: article.updatedAt || article.createdAt,
-    })),
-  ].sort((a, b) => {
-    const ta = a.ts?.toDate ? a.ts.toDate() : new Date(0);
-    const tb = b.ts?.toDate ? b.ts.toDate() : new Date(0);
-    return tb - ta;
-  });
+  // allActivity comes from Firebase activity collection via state
 
   // Stats
   const thisYear = new Date().getFullYear();
@@ -215,16 +196,24 @@ export default function BookList({ userId, onSelect, onSelectArticle, onShelfCli
                 ))}
               </div>
               <div style={cardStyle}>
-                {activityTab === "mine" && allActivity.map((entry, i) => (
-                  <div key={`${entry.type}-${entry.id}`}
-                    onClick={() => entry.type === "book" ? onSelect(entry.id) : onSelectArticle(entry.id)}
-                    style={{ padding: "12px 16px", borderBottom: i === allActivity.length - 1 ? "none" : "0.5px solid #ebebeb", fontSize: 14, color: "#444", cursor: "pointer", lineHeight: 1.5 }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                    onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                    {entry.text} <strong style={{ color: "#333" }}>{entry.title}</strong>{entry.section ? ` (${entry.section})` : ""} on {entry.date}.
-                    {entry.type === "article" && <span style={{ fontSize: 11, color: "#e8318a", border: "1px solid #e8318a", borderRadius: 3, padding: "1px 6px", marginLeft: 8 }}>article</span>}
-                  </div>
-                ))}
+                {activityTab === "mine" && allActivity.map((entry, i) => {
+                  const title = entry.bookTitle || entry.articleTitle || "";
+                  const id = entry.bookId || entry.articleId;
+                  const isArticle = !!entry.articleId;
+                  const date = entry.createdAt?.toDate ? entry.createdAt.toDate().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
+                  return (
+                    <div key={entry.id}
+                      onClick={() => id && (isArticle ? onSelectArticle(id) : onSelect(id))}
+                      style={{ padding: "12px 16px", borderBottom: i === allActivity.length - 1 ? "none" : "0.5px solid #ebebeb", fontSize: 14, color: "#444", cursor: id ? "pointer" : "default", lineHeight: 1.5 }}
+                      onMouseEnter={e => { if (id) e.currentTarget.style.background = "#fafafa"; }}
+                      onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                      {entry.text} <strong style={{ color: "#333" }}>{title}</strong>{date ? ` on ${date}` : ""}.
+                      {isArticle && <span style={{ fontSize: 11, color: "#e8318a", border: "1px solid #e8318a", borderRadius: 3, padding: "1px 6px", marginLeft: 8 }}>article</span>}
+                      {entry.shelf && <span style={{ fontSize: 11, color: "#555", marginLeft: 4 }}>"{entry.shelf}"</span>}
+                      {entry.tag && <span style={{ fontSize: 11, color: "#555", marginLeft: 4 }}>#{entry.tag}</span>}
+                    </div>
+                  );
+                })}
                 {activityTab === "following" && followingActivity.length === 0 && (
                   <div style={{ padding: "16px", fontSize: 14, color: "#aaa" }}>No activity from people you follow yet.</div>
                 )}
