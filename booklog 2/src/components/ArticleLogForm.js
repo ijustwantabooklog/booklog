@@ -45,6 +45,7 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
   const [newQuoteText, setNewQuoteText] = useState("");
   const [newQuoteNote, setNewQuoteNote] = useState("");
   const [showQuoteInput, setShowQuoteInput] = useState(false);
+  const [editingQuoteIndex, setEditingQuoteIndex] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarDate, setCalendarDate] = useState(today);
@@ -74,8 +75,17 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
 
   const addQuote = () => {
     if (!newQuoteText.trim()) return;
-    update("quotes", [...form.quotes, { page: newQuotePage, text: newQuoteText.trim(), quoteNote: newQuoteNote.trim() }]);
-    setNewQuotePage(""); setNewQuoteText(""); setNewQuoteNote(""); setShowQuoteInput(false);
+    if (editingQuoteIndex !== null) {
+      const updated = [...form.quotes];
+      updated[editingQuoteIndex] = { page: newQuotePage, text: newQuoteText.trim(), quoteNote: newQuoteNote.trim() };
+      update("quotes", updated);
+      setEditingQuoteIndex(null);
+    } else {
+      update("quotes", [...form.quotes, { page: newQuotePage, text: newQuoteText.trim(), quoteNote: newQuoteNote.trim() }]);
+    }
+    setNewQuotePage(""); setNewQuoteText(""); setNewQuoteNote("");
+    setShowQuoteInput(true); // auto-reopen for next quote
+    setTimeout(() => pageInputRef.current?.focus(), 50);
   };
 
   const removeQuote = (i) => update("quotes", form.quotes.filter((_, idx) => idx !== i));
@@ -198,7 +208,10 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
               <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
                 <span style={{ fontSize: 14, color: "#e8318a", minWidth: 40, paddingTop: 2 }}>{q.page || "—"}</span>
                 <span style={{ fontSize: 14, color: "#333", flex: 1, lineHeight: 1.5 }}>{q.text}</span>
-                <button onClick={() => removeQuote(i)} style={{ background: "none", border: "none", color: "#ccc", fontSize: 16, padding: 0, cursor: "pointer" }}>×</button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => { setNewQuotePage(q.page); setNewQuoteText(q.text); setNewQuoteNote(q.quoteNote || ""); setEditingQuoteIndex(i); setShowQuoteInput(true); }} style={{ background: "none", border: "none", color: "#aaa", fontSize: 12, padding: 0, cursor: "pointer" }}>edit</button>
+                  <button onClick={() => removeQuote(i)} style={{ background: "none", border: "none", color: "#ccc", fontSize: 16, padding: 0, cursor: "pointer" }}>×</button>
+                </div>
               </div>
               {q.quoteNote && <div style={{ marginLeft: 56, marginTop: 4, fontSize: 13, color: "#888", fontStyle: "italic" }}>{q.quoteNote}</div>}
             </div>
