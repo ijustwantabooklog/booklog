@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
-import { doc, onSnapshot, updateDoc, collection, query, orderBy, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, collection, query, orderBy, setDoc, deleteDoc, getDoc } from "firebase/firestore";
 
 function formatActivityDate(ts) {
   if (!ts) return "";
@@ -18,6 +18,10 @@ export default function Profile({ userId, username, currentUserId, onBack, onSel
   const [followerCount, setFollowerCount] = useState(0);
   const [editingBio, setEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState("");
+  const [followingList, setFollowingList] = useState([]);
+  const [followersList, setFollowersList] = useState([]);
+  const [showFollowers, setShowFollowers] = useState(false);
+  const [showFollowing, setShowFollowing] = useState(false);
 
   useEffect(() => {
     const unsub1 = onSnapshot(doc(db, "users", userId, "profile", "info"), d => {
@@ -34,8 +38,19 @@ export default function Profile({ userId, username, currentUserId, onBack, onSel
     const unsub4 = onSnapshot(collection(db, "users", userId, "followers"), snap => {
       setFollowerCount(snap.size);
       setIsFollowing(snap.docs.some(d => d.id === currentUserId));
+      // Load follower usernames
+      Promise.all(snap.docs.map(async d => {
+        const p = await getDoc(doc(db, "users", d.id, "profile", "info"));
+        return p.exists() ? p.data().username || d.id : d.id;
+      })).then(setFollowersList);
     });
-    return () => { unsub1(); unsub2(); unsub3(); unsub4(); };
+    const unsub5 = onSnapshot(collection(db, "users", userId, "following"), snap => {
+      Promise.all(snap.docs.map(async d => {
+        const p = await getDoc(doc(db, "users", d.id, "profile", "info"));
+        return { id: d.id, username: p.exists() ? p.data().username || d.id : d.id };
+      })).then(setFollowingList);
+    });
+    return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
   }, [userId, currentUserId]);
 
   const saveBio = async () => {
@@ -134,7 +149,18 @@ export default function Profile({ userId, username, currentUserId, onBack, onSel
             onMouseLeave={e => e.currentTarget.style.color = "#888"}>
             <span style={{ fontSize: 18, color: "#444", marginRight: 4 }}>{articles.length}</span>articles
           </div>
-          {!isOwnProfile && <div style={{ fontSize: 13, color: "#888" }}><span style={{ fontSize: 18, color: "#444", marginRight: 4 }}>{followerCount}</span>followers</div>}
+          <div onClick={() => setShowFollowers(p => !p)}
+            style={{ fontSize: 13, color: "#888", cursor: "pointer" }}
+            onMouseEnter={e => e.currentTarget.style.color = "#e8318a"}
+            onMouseLeave={e => e.currentTarget.style.color = "#888"}>
+            <span style={{ fontSize: 18, color: "#444", marginRight: 4 }}>{followerCount}</span>followers
+          </div>
+          <div onClick={() => setShowFollowing(p => !p)}
+            style={{ fontSize: 13, color: "#888", cursor: "pointer" }}
+            onMouseEnter={e => e.currentTarget.style.color = "#e8318a"}
+            onMouseLeave={e => e.currentTarget.style.color = "#888"}>
+            <span style={{ fontSize: 18, color: "#444", marginRight: 4 }}>{followingList.length}</span>following
+          </div>
           {isOwnProfile && (
             <div style={{ fontSize: 13, color: "#888" }}>
               <span style={{ fontSize: 18, color: "#444", marginRight: 4 }}>
@@ -146,7 +172,27 @@ export default function Profile({ userId, username, currentUserId, onBack, onSel
         </div>
       </div>
 
-      {/* Currently Reading */}
+      {/* Followers list */}
+      {showFollowers && followersList.length > 0 && (
+        <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, overflow: "hidden", marginBottom: 10 }}>
+          <div style={{ fontSize: 15, fontWeight: 500, color: "#444", borderBottom: "1px solid #e0e0e0", padding: "14px 16px 10px" }}>Followers</div>
+          {followersList.map((u, i) => (
+            <div key={i} style={{ padding: "10px 16px", borderBottom: i === followersList.length - 1 ? "none" : "0.5px solid #ebebeb", fontSize: 14, color: "#444" }}>{u}</div>
+          ))}
+        </div>
+      )}
+
+      {/* Following list */}
+      {showFollowing && followingList.length > 0 && (
+        <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, overflow: "hidden", marginBottom: 10 }}>
+          <div style={{ fontSize: 15, fontWeight: 500, color: "#444", borderBottom: "1px solid #e0e0e0", padding: "14px 16px 10px" }}>Following</div>
+          {followingList.map((u, i) => (
+            <div key={i} style={{ padding: "10px 16px", borderBottom: i === followingList.length - 1 ? "none" : "0.5px solid #ebebeb", fontSize: 14, color: "#444" }}>{u.username}</div>
+          ))}
+        </div>
+      )}
+
+      {/* Currently Reading */}}
       {currentlyReading.length > 0 && (
         <div style={cardStyle}>
           <div style={sectionHeading}>Currently Reading</div>
