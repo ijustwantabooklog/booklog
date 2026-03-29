@@ -36,13 +36,9 @@ export default function ArticleDetail({ articleId, userId, onBack, onEdit }) {
           {article.title}
         </h1>
 
-        <div style={{ fontSize: 14, color: "#555", marginBottom: 4 }}>
-          {article.author}{article.publication ? ` · ${article.publication}` : ""}
+        <div style={{ fontSize: 14, color: "#555", marginBottom: 10 }}>
+          {[article.author, article.publication, article.datePublished].filter(Boolean).join(" / ")}
         </div>
-
-        {article.datePublished && (
-          <div style={{ fontSize: 13, color: "#aaa", marginBottom: 10 }}>{article.datePublished}</div>
-        )}
 
         {article.url && (
           <a href={article.url.startsWith("http") ? article.url : `https://doi.org/${article.url}`}
