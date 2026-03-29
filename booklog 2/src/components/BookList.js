@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
-import { collection, query, orderBy, onSnapshot, doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, doc, getDoc, updateDoc, limit } from "firebase/firestore";
 
 function StarDisplay({ value, size = 13 }) {
   return (
@@ -23,13 +23,14 @@ function formatActivityDate(ts) {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
-export default function BookList({ userId, onSelect, onSelectArticle, onShelfClick, onTagClick }) {
+export default function BookList({ userId, onSelect, onSelectArticle, onShelfClick, onTagClick, onViewProject }) {
   const [books, setBooks] = useState([]);
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activityTab, setActivityTab] = useState("mine");
   const [followingActivity, setFollowingActivity] = useState([]);
   const [allActivity, setAllActivity] = useState([]);
+  const [latestProject, setLatestProject] = useState(null);
 
   useEffect(() => {
     const q1 = query(collection(db, "users", userId, "books"), orderBy("createdAt", "desc"));
@@ -82,7 +83,11 @@ export default function BookList({ userId, onSelect, onSelectArticle, onShelfCli
       setFollowingActivity(allActivity.slice(0, 20));
     });
 
-    return () => { unsub1(); unsub2(); followingUnsub(); unsubActivity(); };
+    const unsubProject = onSnapshot(
+      query(collection(db, "users", userId, "projects"), orderBy("updatedAt", "desc")),
+      snap => setLatestProject(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() })
+    );
+    return () => { unsub1(); unsub2(); followingUnsub(); unsubActivity(); unsubProject(); };
   }, [userId]);
 
   const shelves = [...new Set(books.flatMap(b => b.shelves || []).filter(Boolean))].sort();
@@ -109,6 +114,19 @@ export default function BookList({ userId, onSelect, onSelectArticle, onShelfCli
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px 60px" }}>
       <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+
+          {latestProject && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 15, color: "#444", fontWeight: 500, marginBottom: 10 }}>Current Project</div>
+              <div onClick={() => onViewProject?.(latestProject.id)}
+                style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, padding: "16px 20px", cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
+                onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+                <div style={{ fontSize: 16, fontFamily: "Georgia, serif", color: "#1a1a1a", marginBottom: 4 }}>{latestProject.title}</div>
+                {latestProject.description && <div style={{ fontSize: 13, color: "#888" }}>{latestProject.description}</div>}
+              </div>
+            </div>
+          )}
 
           {currentlyReading.length > 0 && (
             <div>
