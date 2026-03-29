@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { doc, onSnapshot, deleteDoc, collection, query, orderBy, addDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { logActivity } from "../activityLogger";
 
 export default function ArticleDetail({ articleId, userId, onBack, onEdit }) {
   const [article, setArticle] = useState(null);
@@ -35,6 +36,7 @@ export default function ArticleDetail({ articleId, userId, onBack, onEdit }) {
       text: newRumination.trim(),
       createdAt: serverTimestamp(),
     });
+    await logActivity(userId, "rumination", { text: "Added a rumination to", articleTitle: article?.title, articleId });
     setNewRumination("");
   };
 
