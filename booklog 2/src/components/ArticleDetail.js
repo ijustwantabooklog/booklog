@@ -4,6 +4,8 @@ import { doc, onSnapshot, deleteDoc } from "firebase/firestore";
 
 export default function ArticleDetail({ articleId, userId, onBack, onEdit }) {
   const [article, setArticle] = useState(null);
+  const [showCitation, setShowCitation] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     return onSnapshot(doc(db, "users", userId, "articles", articleId), (d) => {
@@ -18,6 +20,25 @@ export default function ArticleDetail({ articleId, userId, onBack, onEdit }) {
   };
 
   if (!article) return <div style={{ padding: 40, color: "#aaa", fontSize: 14 }}>loading...</div>;
+
+  const generateMLA = () => {
+    const author = article.author || "";
+    const parts = author.split(", ");
+    const authorMLA = parts.length > 1 ? author : (() => {
+      const ws = author.split(" ");
+      return ws.length > 1 ? `${ws[ws.length-1]}, ${ws.slice(0,-1).join(" ")}` : author;
+    })();
+    const publication = article.publication ? ` *${article.publication}*,` : "";
+    const date = article.datePublished ? ` ${article.datePublished},` : "";
+    const doi = article.url ? ` ${article.url}.` : ".";
+    return `${authorMLA}. "${article.title}."${publication}${date}${doi}`;
+  };
+
+  const copyCitation = () => {
+    navigator.clipboard.writeText(generateMLA().replace(/\*/g, ""));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div style={{ maxWidth: 660, margin: "0 auto", padding: "0 20px 60px" }}>
@@ -50,6 +71,21 @@ export default function ArticleDetail({ articleId, userId, onBack, onEdit }) {
         )}
 
         <div style={{ fontSize: 12, color: "#aaa", marginTop: 12 }}>logged {article.dateRead}.</div>
+
+        <div style={{ marginTop: 16 }}>
+          <button onClick={() => setShowCitation(p => !p)}
+            style={{ background: "none", border: "1px solid #e0e0e0", borderRadius: 6, padding: "5px 12px", fontSize: 12, color: "#888", cursor: "pointer" }}>
+            {showCitation ? "hide citation" : "MLA citation"}
+          </button>
+          {showCitation && (
+            <div style={{ marginTop: 10, background: "#f7f7f7", borderRadius: 6, padding: "12px 14px" }}>
+              <p style={{ fontSize: 13, color: "#444", lineHeight: 1.6, fontStyle: "italic", margin: "0 0 8px" }}>{generateMLA()}</p>
+              <button onClick={copyCitation} style={{ background: "none", border: "none", fontSize: 12, color: copied ? "#e8318a" : "#aaa", cursor: "pointer", padding: 0 }}>
+                {copied ? "copied!" : "copy"}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {(article.notes || article.quotes?.length > 0) && (
