@@ -12,6 +12,8 @@ function StarDisplay({ value, size = 20 }) {
 
 export default function BookDetail({ bookId, userId, onBack, onEdit }) {
   const [book, setBook] = useState(null);
+  const [showCitation, setShowCitation] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     return onSnapshot(doc(db, "users", userId, "books", bookId), (d) => {
@@ -26,6 +28,23 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
   };
 
   if (!book) return <div style={{ padding: 40, color: "#aaa", fontSize: 14 }}>loading...</div>;
+
+  const generateMLA = () => {
+    const author = book.author || "";
+    const parts = author.split(" ");
+    const lastName = parts.length > 1 ? parts[parts.length - 1] : author;
+    const firstName = parts.length > 1 ? parts.slice(0, -1).join(" ") : "";
+    const authorMLA = lastName && firstName ? `${lastName}, ${firstName}` : author;
+    const translator = book.translator ? `. Translated by ${book.translator}` : "";
+    const year = book.year ? `, ${book.year}` : "";
+    return `${authorMLA}. *${book.title}*${translator}${year}.`;
+  };
+
+  const copyCitation = () => {
+    navigator.clipboard.writeText(generateMLA().replace(/\*/g, ""));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const shelves = book.shelves || [];
   const tags = book.tags || [];
@@ -70,6 +89,21 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
         {!book.currentlyReading && (
           <div style={{ fontSize: 12, color: "#aaa", marginTop: 12 }}>read on {book.dateRead}.</div>
         )}
+
+        <div style={{ marginTop: 16 }}>
+          <button onClick={() => setShowCitation(p => !p)}
+            style={{ background: "none", border: "1px solid #e0e0e0", borderRadius: 6, padding: "5px 12px", fontSize: 12, color: "#888", cursor: "pointer" }}>
+            {showCitation ? "hide citation" : "MLA citation"}
+          </button>
+          {showCitation && (
+            <div style={{ marginTop: 10, background: "#f7f7f7", borderRadius: 6, padding: "12px 14px" }}>
+              <p style={{ fontSize: 13, color: "#444", lineHeight: 1.6, fontStyle: "italic", margin: "0 0 8px" }}>{generateMLA()}</p>
+              <button onClick={copyCitation} style={{ background: "none", border: "none", fontSize: 12, color: copied ? "#e8318a" : "#aaa", cursor: "pointer", padding: 0 }}>
+                {copied ? "copied!" : "copy"}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {(notes || book.quotes?.length > 0) && (
