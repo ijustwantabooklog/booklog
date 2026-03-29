@@ -44,6 +44,8 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
     dateRead: book?.dateRead || dateStr,
     coverUrl: book?.coverUrl || "",
     currentlyReading: book?.currentlyReading || false,
+    partialRead: book?.partialRead || false,
+    section: book?.section || "",
   });
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -230,6 +232,29 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
           </div>
         </div>
 
+        {/* partial read */}
+        <div style={{ ...card, marginBottom: 10 }}>
+          <div style={{ ...cardRow, cursor: "pointer" }} onClick={() => update("partialRead", !form.partialRead)}>
+            <span style={cardLabel}>Partial read</span>
+            <div style={{
+              width: 18, height: 18, borderRadius: 4, border: "1.5px solid",
+              borderColor: form.partialRead ? "#e8318a" : "#ccc",
+              background: form.partialRead ? "#e8318a" : "#fff",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>
+              {form.partialRead && <span style={{ color: "#fff", fontSize: 12, lineHeight: 1, marginTop: -1 }}>✓</span>}
+            </div>
+          </div>
+          {form.partialRead && (
+            <div style={{ ...cardRow, borderTop: "1px solid #e8e8e8" }}>
+              <span style={cardLabel}>Section</span>
+              <input value={form.section} onChange={e => update("section", e.target.value)}
+                placeholder="e.g. Chapter 3, Introduction, pp. 45-78"
+                style={{ ...bareInput, flex: 1, fontSize: 14 }} />
+            </div>
+          )}
+        </div>
+
         {/* date — greyed out when currently reading */}
         <div style={{ ...card, marginBottom: 10, opacity: form.currentlyReading ? 0.4 : 1, pointerEvents: form.currentlyReading ? "none" : "auto", position: "relative" }}>
           <div style={{ ...cardRow, cursor: "pointer" }} onClick={() => setShowCalendar(p => !p)}>
@@ -386,4 +411,3 @@ const card = { background: "#fff", borderRadius: 10, border: "1px solid #e2e2e2"
 const cardRow = { display: "flex", alignItems: "center", gap: 16, padding: "12px 16px" };
 const cardLabel = { fontSize: 14, color: "#555", minWidth: 72, flexShrink: 0 };
 const bareInput = { background: "none", border: "none", outline: "none", fontFamily: "inherit", padding: 0 };
-
