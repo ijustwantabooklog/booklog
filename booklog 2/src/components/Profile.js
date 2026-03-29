@@ -94,7 +94,7 @@ export default function Profile({ userId, username, currentUserId, onSelectBook,
   const sectionHeading = { fontSize: 15, color: "#444", fontWeight: 500, borderBottom: "1px solid #e0e0e0", padding: "14px 16px 10px" };
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 20px 60px" }}>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px 60px" }}>
 
       {/* Header card */}
       <div style={{ ...cardStyle, padding: "24px", marginTop: 0 }}>
