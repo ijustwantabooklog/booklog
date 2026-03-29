@@ -42,7 +42,7 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
       </div>
 
       <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, padding: "24px" }}>
-        <div style={{ fontSize: 11, color: "#aaa", marginBottom: 6 }}>book</div>
+        <div style={{ fontSize: 11, color: "#aaa", marginBottom: 16 }}>book</div>
         <div style={{ display: "flex", gap: 24, alignItems: "flex-start", marginBottom: 24 }}>
           {book.coverUrl
             ? <img src={book.coverUrl} alt={book.title} style={{ width: 100, height: 140, objectFit: "cover", borderRadius: 3, flexShrink: 0 }} />
