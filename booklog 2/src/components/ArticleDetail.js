@@ -32,20 +32,21 @@ export default function ArticleDetail({ articleId, userId, onBack, onEdit }) {
       <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, padding: "24px" }}>
         <div style={{ fontSize: 11, color: "#aaa", marginBottom: 6 }}>article</div>
 
-        <h1 style={{ fontFamily: "Georgia, serif", fontSize: 24, fontWeight: 400, margin: "0 0 10px", color: "#1a1a1a", lineHeight: 1.3 }}>
+        <h1 style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 400, margin: "0 0 6px", color: "#1a1a1a", lineHeight: 1.2 }}>
           {article.title}
         </h1>
 
-        <div style={{ fontSize: 14, color: "#555", marginBottom: 10 }}>
+        <div style={{ fontSize: 14, color: "#555", marginBottom: 12 }}>
           {[article.author, article.publication, article.datePublished].filter(Boolean).join(" / ")}
         </div>
 
         {article.url && (
-          <a href={article.url.startsWith("http") ? article.url : `https://doi.org/${article.url}`}
-            target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 13, color: "#0000ee", display: "block", marginBottom: 16, wordBreak: "break-all" }}>
-            {article.url}
-          </a>
+          <div style={{ fontSize: 12, color: "#aaa", marginTop: 4, marginBottom: 4, wordBreak: "break-all" }}>
+            <a href={article.url.startsWith("http") ? article.url : `https://doi.org/${article.url}`}
+              target="_blank" rel="noopener noreferrer" style={{ color: "#aaa" }}>
+              {article.url}
+            </a>
+          </div>
         )}
 
         <div style={{ fontSize: 12, color: "#aaa", marginTop: 12 }}>logged {article.dateRead}.</div>
