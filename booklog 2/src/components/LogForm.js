@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, doc, updateDoc, serverTimestamp, onSnapshot, query, orderBy } from "firebase/firestore";
+import { logActivity } from "../activityLogger";
 
 function StarRating({ value, onChange }) {
   const [hovered, setHovered] = useState(0);
