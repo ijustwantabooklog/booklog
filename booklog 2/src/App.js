@@ -12,10 +12,10 @@ import AllBooks from "./components/AllBooks";
 import AllArticles from "./components/AllArticles";
 import ShelfView from "./components/ShelfView";
 import UsernameSetup from "./components/UsernameSetup";
-import Projects from "./components/Projects";
-import ProjectDetail from "./components/ProjectDetail";
 import Following from "./components/Following";
 import Profile from "./components/Profile";
+import Projects from "./components/Projects";
+import ProjectDetail from "./components/ProjectDetail";
 import "./App.css";
 
 export default function App() {
@@ -23,15 +23,11 @@ export default function App() {
   const [username, setUsername] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [loadingUsername, setLoadingUsername] = useState(false);
-  const [view, setView] = useState("main");
-  const [page, setPage] = useState("home");
-  const [selected, setSelected] = useState(null);
-  const [editing, setEditing] = useState(null);
+
+  // Single source of truth for navigation
+  const [screen, setScreen] = useState({ type: "home" });
   const [logType, setLogType] = useState("book");
-  const [shelfFilter, setShelfFilter] = useState(null);
-  const [viewingUser, setViewingUser] = useState(null);
-  const [viewingProject, setViewingProject] = useState(null);
-  const [shelfFilterType, setShelfFilterType] = useState(null);
+  const [editing, setEditing] = useState(null);
 
   useEffect(() => {
     return onAuthStateChanged(auth, (u) => {
@@ -53,6 +49,7 @@ export default function App() {
 
   const signIn = () => signInWithPopup(auth, provider);
   const signOutUser = () => signOut(auth);
+  const go = (s) => setScreen(s);
 
   if (loadingAuth || loadingUsername) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
@@ -72,97 +69,118 @@ export default function App() {
 
   if (!username) return <UsernameSetup userId={user.uid} onComplete={(u) => setUsername(u)} />;
 
-  const goBack = () => setView("main");
-
-  if (view === "log") {
+  if (screen.type === "log") {
     if (logType === "article") return (
       <ArticleLogForm article={editing} userId={user.uid}
-        onCancel={() => { setView(editing?.id ? "article-detail" : "main"); setEditing(null); }}
-        onSave={(a) => { setEditing(null); setSelected(a.id); setView("article-detail"); }} />
+        onCancel={() => { go(editing?.id ? { type: "article-detail", id: editing.id } : { type: "home" }); setEditing(null); }}
+        onSave={(a) => { setEditing(null); go({ type: "article-detail", id: a.id }); }} />
     );
     return (
       <LogForm book={editing} userId={user.uid}
-        onCancel={() => { setView(editing?.id ? "detail" : "main"); setEditing(null); }}
-        onSave={(book) => { setEditing(null); if (book?.id) { setSelected(book.id); setView("detail"); } else setView("main"); }} />
+        onCancel={() => { go(editing?.id ? { type: "book-detail", id: editing.id } : { type: "home" }); setEditing(null); }}
+        onSave={(book) => { setEditing(null); go(book?.id ? { type: "book-detail", id: book.id } : { type: "home" }); }} />
     );
   }
 
-  if (view === "detail" && selected) return (
+  if (screen.type === "book-detail") return (
     <>
-      <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
-        onNew={(type) => { setLogType(type); setEditing(null); setView("log"); }} onSignOut={signOutUser} />
-      <BookDetail bookId={selected} userId={user.uid} onBack={goBack}
-        onEdit={(book) => { setLogType("book"); setEditing(book); setView("log"); }} />
+      <Nav username={username} screen={screen} go={go}
+        onNew={(type) => { setLogType(type); setEditing(null); go({ type: "log" }); }} onSignOut={signOutUser} />
+      <BookDetail bookId={screen.id} userId={user.uid}
+        onBack={() => go({ type: "home" })}
+        onEdit={(book) => { setLogType("book"); setEditing(book); go({ type: "log" }); }} />
     </>
   );
 
-  if (view === "article-detail" && selected) return (
+  if (screen.type === "article-detail") return (
     <>
-      <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
-        onNew={(type) => { setLogType(type); setEditing(null); setView("log"); }} onSignOut={signOutUser} />
-      <ArticleDetail articleId={selected} userId={user.uid} onBack={goBack}
-        onEdit={(a) => { setLogType("article"); setEditing(a); setView("log"); }} />
+      <Nav username={username} screen={screen} go={go}
+        onNew={(type) => { setLogType(type); setEditing(null); go({ type: "log" }); }} onSignOut={signOutUser} />
+      <ArticleDetail articleId={screen.id} userId={user.uid}
+        onBack={() => go({ type: "home" })}
+        onEdit={(a) => { setLogType("article"); setEditing(a); go({ type: "log" }); }} />
     </>
   );
 
-  if (view === "project-detail" && viewingProject) return (
+  if (screen.type === "project-detail") return (
     <>
-      <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
-        onNew={(type) => { setLogType(type); setEditing(null); setView("log"); }} onSignOut={signOutUser} />
-      <ProjectDetail projectId={viewingProject} userId={user.uid}
-        onBack={() => { setView("main"); setPage("projects"); }}
-        onSelectBook={(id) => { setSelected(id); setView("detail"); }}
-        onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }} />
+      <Nav username={username} screen={screen} go={go}
+        onNew={(type) => { setLogType(type); setEditing(null); go({ type: "log" }); }} onSignOut={signOutUser} />
+      <ProjectDetail projectId={screen.id} userId={user.uid}
+        onBack={() => go({ type: "projects" })}
+        onSelectBook={(id) => go({ type: "book-detail", id })}
+        onSelectArticle={(id) => go({ type: "article-detail", id })} />
     </>
   );
 
-  if (view === "public-profile" && viewingUser) return (
+  if (screen.type === "public-profile") return (
     <>
-      <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
-        onNew={(type) => { setLogType(type); setEditing(null); setView("log"); }} onSignOut={signOutUser} />
-      <Profile userId={viewingUser.id} username={viewingUser.username}
-        currentUserId={user.uid} onBack={() => setView("main")} />
+      <Nav username={username} screen={screen} go={go}
+        onNew={(type) => { setLogType(type); setEditing(null); go({ type: "log" }); }} onSignOut={signOutUser} />
+      <Profile userId={screen.id} username={screen.username}
+        currentUserId={user.uid} onBack={() => go({ type: "following" })} />
     </>
   );
 
-  if (view === "shelf-view") return (
+  if (screen.type === "shelf-view") return (
     <>
-      <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
-        onNew={(type) => { setLogType(type); setEditing(null); setView("log"); }} onSignOut={signOutUser} />
-      <ShelfView userId={user.uid} filter={shelfFilter} filterType={shelfFilterType}
-        onSelect={(id) => { setSelected(id); setView("detail"); }}
-        onBack={goBack} />
+      <Nav username={username} screen={screen} go={go}
+        onNew={(type) => { setLogType(type); setEditing(null); go({ type: "log" }); }} onSignOut={signOutUser} />
+      <ShelfView userId={user.uid} filter={screen.filter} filterType={screen.filterType}
+        onSelect={(id) => go({ type: "book-detail", id })}
+        onBack={() => go({ type: "home" })} />
     </>
   );
 
+  // Main tabbed pages
+  const page = screen.type;
   return (
     <>
-      <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
-        onNew={(type) => { setLogType(type); setEditing(null); setView("log"); }} onSignOut={signOutUser} />
+      <Nav username={username} screen={screen} go={go}
+        onNew={(type) => { setLogType(type); setEditing(null); go({ type: "log" }); }} onSignOut={signOutUser} />
       {page === "home" && (
         <BookList userId={user.uid}
-          onSelect={(id) => { setSelected(id); setView("detail"); }}
-          onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }}
-          onShelfClick={(shelf) => { setShelfFilter(shelf); setShelfFilterType("shelf"); setView("shelf-view"); }}
-          onTagClick={(tag) => { setShelfFilter(tag); setShelfFilterType("tag"); setView("shelf-view"); }}
-          onViewProject={(id) => { setViewingProject(id); setView("project-detail"); }} />
+          onSelect={(id) => go({ type: "book-detail", id })}
+          onSelectArticle={(id) => go({ type: "article-detail", id })}
+          onShelfClick={(filter) => go({ type: "shelf-view", filter, filterType: "shelf" })}
+          onTagClick={(filter) => go({ type: "shelf-view", filter, filterType: "tag" })}
+          onViewProject={(id) => go({ type: "project-detail", id })} />
       )}
-      {page === "diary" && <Diary userId={user.uid} onSelectBook={(id) => { setSelected(id); setView("detail"); }} onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }} />}
-      {page === "books" && <AllBooks userId={user.uid} onSelect={(id) => { setSelected(id); setView("detail"); }} />}
-      {page === "articles" && <AllArticles userId={user.uid} onSelect={(id) => { setSelected(id); setView("article-detail"); }} />}
-      {page === "following" && <Following userId={user.uid} onViewProfile={(id, uname) => { setViewingUser({ id, username: uname }); setView("public-profile"); }} />}
-      {page === "projects" && <Projects userId={user.uid} onViewProject={(id) => { setViewingProject(id); setView("project-detail"); }} />}
-      {page === "profile" && <Profile userId={user.uid} username={username} currentUserId={user.uid} onSelectBook={(id) => { setSelected(id); setView("detail"); }} onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }} onNavigate={(p) => setPage(p)} onShelfClick={(shelf) => { setShelfFilter(shelf); setShelfFilterType("shelf"); setView("shelf-view"); }} />}
+      {page === "diary" && <Diary userId={user.uid}
+        onSelectBook={(id) => go({ type: "book-detail", id })}
+        onSelectArticle={(id) => go({ type: "article-detail", id })} />}
+      {page === "books" && <AllBooks userId={user.uid} onSelect={(id) => go({ type: "book-detail", id })} />}
+      {page === "articles" && <AllArticles userId={user.uid} onSelect={(id) => go({ type: "article-detail", id })} />}
+      {page === "following" && <Following userId={user.uid}
+        onViewProfile={(id, uname) => go({ type: "public-profile", id, username: uname })} />}
+      {page === "projects" && <Projects userId={user.uid}
+        onViewProject={(id) => go({ type: "project-detail", id })} />}
+      {page === "profile" && <Profile userId={user.uid} username={username} currentUserId={user.uid}
+        onSelectBook={(id) => go({ type: "book-detail", id })}
+        onSelectArticle={(id) => go({ type: "article-detail", id })}
+        onNavigate={(type) => go({ type })}
+        onShelfClick={(filter) => go({ type: "shelf-view", filter, filterType: "shelf" })} />}
     </>
   );
 }
 
-function Nav({ username, page, setPage, onNew, onSignOut }) {
+function Nav({ username, screen, go, onNew, onSignOut }) {
   const [showDropdown, setShowDropdown] = useState(false);
+  const tabs = [["home","Home"],["diary","Diary"],["books","Books"],["articles","Articles"],["following","Following"],["projects","Projects"]];
+  const page = ["home","diary","books","articles","following","projects","profile"].includes(screen.type) ? screen.type : "";
+
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0 10px" }}>
-        <span style={{ fontSize: 22, color: "#444" }}>Reading Archive / <span onClick={() => { setPage("profile"); setView("main"); }} style={{ cursor: "pointer" }} onMouseEnter={e => e.currentTarget.style.color = "#e8318a"} onMouseLeave={e => e.currentTarget.style.color = "#444"}>{username}</span></span>
+        <span style={{ fontSize: 22, color: "#444" }}>
+          Reading Archive / <span
+            onClick={() => go({ type: "profile" })}
+            style={{ cursor: "pointer" }}
+            onMouseEnter={e => e.currentTarget.style.color = "#e8318a"}
+            onMouseLeave={e => e.currentTarget.style.color = "#444"}>
+            {username}
+          </span>
+        </span>
         <div style={{ display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
           <div style={{ position: "relative" }}>
             <button onClick={() => setShowDropdown(p => !p)}
@@ -186,9 +204,9 @@ function Nav({ username, page, setPage, onNew, onSignOut }) {
         </div>
       </div>
       <div style={{ display: "flex", gap: 20, padding: "12px 0 20px" }}>
-        {[["home","Home"],["diary","Diary"],["books","Books"],["articles","Articles"],["following","Following"],["projects","Projects"]].map(([p, label]) => (
-          <span key={p} onClick={() => setPage(p)}
-            style={{ fontSize: 15, color: page === p ? "#1a1a1a" : "#aaa", fontWeight: page === p ? 500 : 400, cursor: "pointer" }}>
+        {tabs.map(([type, label]) => (
+          <span key={type} onClick={() => go({ type })}
+            style={{ fontSize: 15, color: page === type ? "#1a1a1a" : "#aaa", fontWeight: page === type ? 500 : 400, cursor: "pointer" }}>
             {label}
           </span>
         ))}
