@@ -87,6 +87,10 @@ export default function BookList({ userId, onSelect, onSelectArticle, onShelfCli
       query(collection(db, "users", userId, "projects"), orderBy("updatedAt", "desc")),
       snap => setLatestProject(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() })
     );
+    const unsubActivity = onSnapshot(
+      query(collection(db, "users", userId, "activity"), orderBy("createdAt", "desc")),
+      snap => setAllActivity(snap.docs.map(d => ({ id: d.id, ...d.data() })).slice(0, 20))
+    );
     return () => { unsub1(); unsub2(); followingUnsub(); unsubActivity(); unsubProject(); };
   }, [userId]);
 
