@@ -106,7 +106,6 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
     <div style={{ background: "#f4f4f4", minHeight: "100vh" }}>
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 16px 60px" }}>
 
-        {/* header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0 16px" }}>
           <button onClick={onCancel} style={ghostBtn}>Cancel</button>
           <button onClick={handleSave} disabled={saving} style={{ background: "#e8318a", color: "#fff", border: "none", borderRadius: 6, padding: "8px 20px", fontSize: 13, fontWeight: 500, cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
@@ -187,7 +186,7 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
         </div>
 
         {/* quotes */}
-        <div style={{ ...card }}>
+        <div style={card}>
           {form.quotes.map((q, i) => (
             <div key={i} style={{ padding: "10px 16px", borderBottom: "0.5px solid #e8e8e8", background: "#f7f7f7" }}>
               <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
