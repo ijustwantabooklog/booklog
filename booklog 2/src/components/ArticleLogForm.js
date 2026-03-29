@@ -33,14 +33,13 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
     dateRead: article?.dateRead || dateStr,
   });
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [urlInput, setUrlInput] = useState(article?.url || "");
+  const [fetchingUrl, setFetchingUrl] = useState(false);
   const [newQuotePage, setNewQuotePage] = useState("");
   const [newQuoteText, setNewQuoteText] = useState("");
   const [newQuoteNote, setNewQuoteNote] = useState("");
   const [showQuoteInput, setShowQuoteInput] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [fetchingUrl, setFetchingUrl] = useState(false);
-  const [urlInput, setUrlInput] = useState(article?.url || '');
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarDate, setCalendarDate] = useState(today);
   const pageInputRef = useRef(null);
@@ -50,6 +49,22 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
   }, [showQuoteInput]);
 
   const update = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  const handleUrlEnter = async (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (!urlInput.trim()) return;
+    setFetchingUrl(true);
+    update("url", urlInput.trim());
+    const meta = await fetchMetadata(urlInput.trim());
+    if (meta) {
+      if (meta.title) update("title", meta.title);
+      if (meta.author) update("author", meta.author);
+      if (meta.publication) update("publication", meta.publication);
+      if (meta.datePublished) update("datePublished", meta.datePublished);
+    }
+    setFetchingUrl(false);
+  };
 
   const addQuote = () => {
     if (!newQuoteText.trim()) return;
@@ -90,6 +105,8 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
   return (
     <div style={{ background: "#f4f4f4", minHeight: "100vh" }}>
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 16px 60px" }}>
+
+        {/* header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0 16px" }}>
           <button onClick={onCancel} style={ghostBtn}>Cancel</button>
           <button onClick={handleSave} disabled={saving} style={{ background: "#e8318a", color: "#fff", border: "none", borderRadius: 6, padding: "8px 20px", fontSize: 13, fontWeight: 500, cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
@@ -102,22 +119,7 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
           <input
             value={urlInput}
             onChange={e => setUrlInput(e.target.value)}
-            onKeyDown={async e => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                if (!urlInput.trim()) return;
-                setFetchingUrl(true);
-                update("url", urlInput.trim());
-                const meta = await fetchMetadata(urlInput.trim());
-                if (meta) {
-                  if (meta.title) update("title", meta.title);
-                  if (meta.author) update("author", meta.author);
-                  if (meta.publication) update("publication", meta.publication);
-                  if (meta.datePublished) update("datePublished", meta.datePublished);
-                }
-                setFetchingUrl(false);
-              }
-            }}
+            onKeyDown={handleUrlEnter}
             placeholder="Paste a URL and press Enter to autofill..."
             style={{ width: "100%", padding: "10px 14px", fontSize: 14, border: "1px solid #e0e0e0", borderRadius: 8, background: "#fff", outline: "none" }}
           />
@@ -134,9 +136,7 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
             style={{ ...bareInput, fontSize: 15, color: "#555", display: "block", width: "100%", marginBottom: 4 }} />
           <input value={form.datePublished} onChange={e => update("datePublished", e.target.value)} placeholder="Date published"
             style={{ ...bareInput, fontSize: 15, color: "#555", display: "block", width: "100%", marginBottom: 4 }} />
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input value={form.url} onChange={e => update("url", e.target.value)}
-            placeholder="URL"
+          <input value={form.url} onChange={e => update("url", e.target.value)} placeholder="URL"
             style={{ ...bareInput, fontSize: 14, color: "#0000ee", display: "block", width: "100%" }} />
         </div>
 
@@ -189,7 +189,7 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
         {/* quotes */}
         <div style={{ ...card }}>
           {form.quotes.map((q, i) => (
-            <div key={i} style={{ padding: "10px 16px", borderBottom: "0.5px solid #e8e8e8", background: "#f9f9f9" }}>
+            <div key={i} style={{ padding: "10px 16px", borderBottom: "0.5px solid #e8e8e8", background: "#f7f7f7" }}>
               <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
                 <span style={{ fontSize: 14, color: "#e8318a", minWidth: 40, paddingTop: 2 }}>{q.page || "—"}</span>
                 <span style={{ fontSize: 14, color: "#333", flex: 1, lineHeight: 1.5 }}>{q.text}</span>
@@ -222,6 +222,7 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
             + add quote
           </button>
         </div>
+
       </div>
     </div>
   );
