@@ -2,6 +2,22 @@ import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 
+async function fetchMetadata(url) {
+  try {
+    const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
+    const data = await res.json();
+    if (data.status === "success") {
+      return {
+        title: data.data.title || "",
+        author: data.data.author || "",
+        publication: data.data.publisher || "",
+        datePublished: data.data.date ? new Date(data.data.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "",
+      };
+    }
+  } catch(e) {}
+  return null;
+}
+
 export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
   const today = new Date();
   const dateStr = today.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
@@ -23,6 +39,8 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
   const [newQuoteNote, setNewQuoteNote] = useState("");
   const [showQuoteInput, setShowQuoteInput] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [fetchingUrl, setFetchingUrl] = useState(false);
+  const [urlInput, setUrlInput] = useState(article?.url || '');
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarDate, setCalendarDate] = useState(today);
   const pageInputRef = useRef(null);
@@ -89,8 +107,29 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
             style={{ ...bareInput, fontSize: 15, color: "#555", display: "block", width: "100%", marginBottom: 4 }} />
           <input value={form.datePublished} onChange={e => update("datePublished", e.target.value)} placeholder="Date published"
             style={{ ...bareInput, fontSize: 15, color: "#555", display: "block", width: "100%", marginBottom: 4 }} />
-          <input value={form.url} onChange={e => update("url", e.target.value)} placeholder="URL"
-            style={{ ...bareInput, fontSize: 14, color: "#0000ee", display: "block", width: "100%" }} />
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input value={urlInput} onChange={e => setUrlInput(e.target.value)}
+              onKeyDown={async e => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (!urlInput.trim()) return;
+                  setFetchingUrl(true);
+                  update("url", urlInput.trim());
+                  const meta = await fetchMetadata(urlInput.trim());
+                  if (meta) {
+                    if (meta.title && !form.title) update("title", meta.title);
+                    if (meta.author && !form.author) update("author", meta.author);
+                    if (meta.publication && !form.publication) update("publication", meta.publication);
+                    if (meta.datePublished && !form.datePublished) update("datePublished", meta.datePublished);
+                    update("url", urlInput.trim());
+                  }
+                  setFetchingUrl(false);
+                }
+              }}
+              placeholder="Paste URL and press Enter to autofill..."
+              style={{ ...bareInput, fontSize: 14, color: "#0000ee", flex: 1 }} />
+            {fetchingUrl && <span style={{ fontSize: 12, color: "#aaa" }}>fetching...</span>}
+          </div>
         </div>
 
         {/* date */}
