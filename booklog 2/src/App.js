@@ -12,6 +12,8 @@ import AllBooks from "./components/AllBooks";
 import AllArticles from "./components/AllArticles";
 import ShelfView from "./components/ShelfView";
 import UsernameSetup from "./components/UsernameSetup";
+import Following from "./components/Following";
+import PublicProfile from "./components/PublicProfile";
 import Profile from "./components/Profile";
 import "./App.css";
 
@@ -26,6 +28,7 @@ export default function App() {
   const [editing, setEditing] = useState(null);
   const [logType, setLogType] = useState("book");
   const [shelfFilter, setShelfFilter] = useState(null);
+  const [viewingUser, setViewingUser] = useState(null);
   const [shelfFilterType, setShelfFilterType] = useState(null);
 
   useEffect(() => {
@@ -100,6 +103,15 @@ export default function App() {
     </>
   );
 
+  if (view === "public-profile" && viewingUser) return (
+    <>
+      <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
+        onNew={(type) => { setLogType(type); setEditing(null); setView("log"); }} onSignOut={signOutUser} />
+      <PublicProfile viewUserId={viewingUser.id} viewUsername={viewingUser.username}
+        currentUserId={user.uid} onBack={() => setView("main")} />
+    </>
+  );
+
   if (view === "shelf-view") return (
     <>
       <Nav username={username} page={page} setPage={(p) => { setPage(p); setView("main"); }}
@@ -124,6 +136,7 @@ export default function App() {
       {page === "diary" && <Diary userId={user.uid} onSelectBook={(id) => { setSelected(id); setView("detail"); }} />}
       {page === "books" && <AllBooks userId={user.uid} onSelect={(id) => { setSelected(id); setView("detail"); }} />}
       {page === "articles" && <AllArticles userId={user.uid} onSelect={(id) => { setSelected(id); setView("article-detail"); }} />}
+      {page === "following" && <Following userId={user.uid} onViewProfile={(id, uname) => { setViewingUser({ id, username: uname }); setView("public-profile"); }} />}
       {page === "profile" && <Profile userId={user.uid} username={username} onSelectBook={(id) => { setSelected(id); setView("detail"); }} onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }} />}
     </>
   );
@@ -158,7 +171,7 @@ function Nav({ username, page, setPage, onNew, onSignOut }) {
         </div>
       </div>
       <div style={{ display: "flex", gap: 20, padding: "12px 0 20px" }}>
-        {[["home","Home"],["diary","Diary"],["books","Books"],["articles","Articles"]].map(([p, label]) => (
+        {[["home","Home"],["diary","Diary"],["books","Books"],["articles","Articles"],["following","Following"]].map(([p, label]) => (
           <span key={p} onClick={() => setPage(p)}
             style={{ fontSize: 15, color: page === p ? "#1a1a1a" : "#aaa", fontWeight: page === p ? 500 : 400, cursor: "pointer" }}>
             {label}
