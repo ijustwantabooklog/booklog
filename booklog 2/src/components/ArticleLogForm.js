@@ -4,16 +4,14 @@ import { collection, addDoc, doc, updateDoc, serverTimestamp } from "firebase/fi
 
 async function fetchMetadata(url) {
   try {
-    const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
+    const res = await fetch(`https://jsonlink.io/api/extract?url=${encodeURIComponent(url)}`);
     const data = await res.json();
-    if (data.status === "success") {
-      return {
-        title: data.data.title || "",
-        author: data.data.author || "",
-        publication: data.data.publisher || "",
-        datePublished: data.data.date ? new Date(data.data.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "",
-      };
-    }
+    return {
+      title: data.title || "",
+      author: (data.authors && data.authors[0]) || "",
+      publication: data.domain || "",
+      datePublished: data.date ? new Date(data.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "",
+    };
   } catch(e) {}
   return null;
 }
