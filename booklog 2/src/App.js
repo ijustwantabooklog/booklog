@@ -136,7 +136,7 @@ export default function App() {
       {page === "books" && <AllBooks userId={user.uid} onSelect={(id) => { setSelected(id); setView("detail"); }} />}
       {page === "articles" && <AllArticles userId={user.uid} onSelect={(id) => { setSelected(id); setView("article-detail"); }} />}
       {page === "following" && <Following userId={user.uid} onViewProfile={(id, uname) => { setViewingUser({ id, username: uname }); setView("public-profile"); }} />}
-      {page === "profile" && <Profile userId={user.uid} username={username} currentUserId={user.uid} onSelectBook={(id) => { setSelected(id); setView("detail"); }} onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }} />}
+      {page === "profile" && <Profile userId={user.uid} username={username} currentUserId={user.uid} onSelectBook={(id) => { setSelected(id); setView("detail"); }} onSelectArticle={(id) => { setSelected(id); setView("article-detail"); }} onNavigate={(p) => setPage(p)} onShelfClick={(shelf) => { setShelfFilter(shelf); setShelfFilterType("shelf"); setView("shelf-view"); }} />}
     </>
   );
 }
