@@ -5,6 +5,7 @@ import BookList from "./components/BookList";
 import BookDetail from "./components/BookDetail";
 import LogForm from "./components/LogForm";
 import Diary from "./components/Diary";
+import AllBooks from "./components/AllBooks";
 import "./App.css";
 
 export default function App() {
@@ -71,6 +72,7 @@ export default function App() {
         onNew={() => { setEditing(null); setView("log"); }} onSignOut={signOutUser} />
       {page === "home" && <BookList userId={user.uid} onSelect={(id) => { setSelected(id); setView("detail"); }} />}
       {page === "diary" && <Diary userId={user.uid} onSelectBook={(id) => { setSelected(id); setView("detail"); }} />}
+      {page === "books" && <AllBooks userId={user.uid} onSelect={(id) => { setSelected(id); setView("detail"); }} />}
     </>
   );
 }
@@ -88,6 +90,7 @@ function Nav({ firstName, page, setPage, onNew, onSignOut }) {
       <div style={{ display: "flex", gap: 20, padding: "12px 0 20px" }}>
         <span onClick={() => setPage("home")} style={{ fontSize: 15, color: page === "home" ? "#1a1a1a" : "#aaa", fontWeight: page === "home" ? 500 : 400, cursor: "pointer" }}>Home</span>
         <span onClick={() => setPage("diary")} style={{ fontSize: 15, color: page === "diary" ? "#1a1a1a" : "#aaa", fontWeight: page === "diary" ? 500 : 400, cursor: "pointer" }}>Diary</span>
+        <span onClick={() => setPage("books")} style={{ fontSize: 15, color: page === "books" ? "#1a1a1a" : "#aaa", fontWeight: page === "books" ? 500 : 400, cursor: "pointer" }}>Books</span>
       </div>
     </div>
   );
