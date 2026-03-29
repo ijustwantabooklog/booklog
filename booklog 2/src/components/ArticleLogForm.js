@@ -2,15 +2,23 @@ import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 
-async function fetchMetadata(url) {
+async function fetchMetadata(input) {
   try {
-    const res = await fetch(`https://jsonlink.io/api/extract?url=${encodeURIComponent(url)}`);
+    // Extract DOI from URL or raw DOI string
+    const doiMatch = input.match(/10\.\d{4,}[^\s]*/);
+    if (!doiMatch) return null;
+    const doi = doiMatch[0];
+    const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(doi)}`);
     const data = await res.json();
+    const work = data.message;
+    const authors = (work.author || []).map(a => [a.given, a.family].filter(Boolean).join(" ")).join(", ");
+    const date = work["published-print"]?.["date-parts"]?.[0] || work["published-online"]?.["date-parts"]?.[0];
+    const dateStr = date ? new Date(date[0], (date[1] || 1) - 1, date[2] || 1).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
     return {
-      title: data.title || "",
-      author: (data.authors && data.authors[0]) || "",
-      publication: data.domain || "",
-      datePublished: data.date ? new Date(data.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "",
+      title: (work.title && work.title[0]) || "",
+      author: authors,
+      publication: (work["container-title"] && work["container-title"][0]) || "",
+      datePublished: dateStr,
     };
   } catch(e) {}
   return null;
@@ -117,7 +125,7 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
             value={urlInput}
             onChange={e => setUrlInput(e.target.value)}
             onKeyDown={handleUrlEnter}
-            placeholder="Paste a URL and press Enter to autofill..."
+            placeholder="Paste a DOI or URL containing a DOI, press Enter to autofill..."
             style={{ width: "100%", padding: "10px 14px", fontSize: 14, border: "1px solid #e0e0e0", borderRadius: 8, background: "#fff", outline: "none" }}
           />
           {fetchingUrl && <span style={{ position: "absolute", right: 12, top: 10, fontSize: 12, color: "#aaa" }}>fetching...</span>}
