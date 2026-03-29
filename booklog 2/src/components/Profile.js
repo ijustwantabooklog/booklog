@@ -224,7 +224,7 @@ export default function Profile({ userId, username, currentUserId, onSelectBook,
                   onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
                   onMouseLeave={e => e.currentTarget.style.background = "none"}>
                   <span style={{ fontSize: 14, color: "#0000ee", textDecoration: "underline" }}>{shelf}</span>
-                  <span style={{ fontSize: 12, color: "#aaa" }}>{books.filter(b => (b.shelves || []).includes(shelf)).length}</span>
+                  <span style={{ fontSize: 12, color: "#aaa" }}>{books.filter(b => ((b.shelves || []).map(s => typeof s === 'string' ? s : s.name)).some(s => (typeof s === 'string' ? s : s.name) === shelf)).length}</span>
                 </div>
               ))}
             </div>
