@@ -234,6 +234,47 @@ export default function Profile({ userId, username, currentUserId, onSelectBook,
         </div>
 
         {/* Right column - Activity */}
+        {/* Recently Logged */}
+        {!loading && (books.filter(b => !b.currentlyReading).length > 0 || articles.length > 0) && (
+          <div style={cardStyle}>
+            <div style={sectionHeading}>Recently Logged</div>
+            {[...books.filter(b => !b.currentlyReading).map(b => ({ ...b, _type: "book" })),
+              ...articles.map(a => ({ ...a, _type: "article" }))]
+              .sort((a, b) => {
+                const ta = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+                const tb = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+                return tb - ta;
+              })
+              .slice(0, 5)
+              .map((entry, i, arr) => (
+                <div key={entry.id}
+                  onClick={() => isOwnProfile && (entry._type === "book" ? onSelectBook?.(entry.id) : onSelectArticle?.(entry.id))}
+                  style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 16px", borderBottom: i === arr.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: isOwnProfile ? "pointer" : "default" }}
+                  onMouseEnter={e => { if (isOwnProfile) e.currentTarget.style.background = "#fafafa"; }}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                  {entry._type === "book" ? (
+                    entry.coverUrl
+                      ? <img src={entry.coverUrl} alt={entry.title} style={{ width: 36, height: 52, objectFit: "cover", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0 }} />
+                      : <div style={{ width: 36, height: 52, background: "#e8e8e8", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 36, height: 52, background: "#f0e8ff", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontSize: 9, color: "#888", textAlign: "center", lineHeight: 1.3 }}>art-<br/>icle</span>
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, color: isOwnProfile ? "#0000ee" : "#1a1a1a", textDecoration: isOwnProfile ? "underline" : "none", marginBottom: 2, fontFamily: entry._type === "book" ? "Georgia, serif" : "inherit" }}>{entry.title}</div>
+                    <div style={{ fontSize: 13, color: "#444" }}>
+                      {entry._type === "book"
+                        ? `${entry.author}${entry.translator ? `, trans. ${entry.translator}` : ""}`
+                        : [entry.author, entry.publication].filter(Boolean).join(" · ")}
+                    </div>
+                  </div>
+                  {entry._type === "article" && <span style={{ fontSize: 11, color: "#e8318a", border: "1px solid #e8318a", borderRadius: 3, padding: "1px 6px", flexShrink: 0, marginTop: 2 }}>article</span>}
+                </div>
+              ))}
+          </div>
+        )}
+
         {allActivity.length > 0 && (
           <div style={{ width: 340, flexShrink: 0 }}>
             <div style={cardStyle}>
