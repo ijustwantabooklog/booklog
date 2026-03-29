@@ -81,7 +81,7 @@ function Nav({ firstName, page, setPage, onNew, onSignOut }) {
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0 10px" }}>
-        <span style={{ fontSize: 22, color: "#444" }}>{firstName}/</span>
+        <span style={{ fontSize: 22, color: "#444" }}>Book Log <span style={{ color: "#bbb", fontWeight: 400 }}>/ {firstName}</span></span>
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <button onClick={onNew} style={{ background: "#e8318a", color: "#fff", border: "none", borderRadius: 6, padding: "7px 18px", fontSize: 14, cursor: "pointer" }}>Log it</button>
           <span onClick={onSignOut} style={{ fontSize: 13, color: "#aaa", cursor: "pointer" }}>sign out</span>
