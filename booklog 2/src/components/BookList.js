@@ -14,7 +14,7 @@ function formatDate(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
   if (isNaN(d)) return dateStr;
-  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function formatActivityDate(ts) {
@@ -23,18 +23,26 @@ function formatActivityDate(ts) {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
-export default function BookList({ userId, onSelect }) {
+export default function BookList({ userId, onSelect, onSelectArticle, onShelfClick, onTagClick }) {
   const [books, setBooks] = useState([]);
+  const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeShelf, setActiveShelf] = useState(null);
-  const [activeTag, setActiveTag] = useState(null);
 
   useEffect(() => {
-    const q = query(collection(db, "users", userId, "books"), orderBy("createdAt", "desc"));
-    return onSnapshot(q, (snap) => {
+    const q1 = query(collection(db, "users", userId, "books"), orderBy("createdAt", "desc"));
+    const q2 = query(collection(db, "users", userId, "articles"), orderBy("createdAt", "desc"));
+    let booksLoaded = false, articlesLoaded = false;
+    const unsub1 = onSnapshot(q1, (snap) => {
       setBooks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
+      booksLoaded = true;
+      if (articlesLoaded) setLoading(false);
     });
+    const unsub2 = onSnapshot(q2, (snap) => {
+      setArticles(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      articlesLoaded = true;
+      if (booksLoaded) setLoading(false);
+    });
+    return () => { unsub1(); unsub2(); };
   }, [userId]);
 
   const shelves = [...new Set(books.flatMap(b => b.shelves || []).filter(Boolean))].sort();
@@ -42,39 +50,49 @@ export default function BookList({ userId, onSelect }) {
   const currentlyReading = books.filter(b => b.currentlyReading);
   const finished = books.filter(b => !b.currentlyReading);
 
-  const filtered = finished.filter(b => {
-    if (activeShelf && !(b.shelves || []).includes(activeShelf)) return false;
-    if (activeTag && !(b.tags || []).includes(activeTag)) return false;
-    return true;
+  // Activity from both books and articles
+  const allActivity = [
+    ...books.map(book => {
+      const date = formatActivityDate(book.updatedAt || book.createdAt);
+      let text = "Logged";
+      if (book.currentlyReading) text = "Marked as currently reading";
+      else if (book.rating > 0 && book.notes) text = "Read and reviewed";
+      else if (book.rating > 0) text = "Read and rated";
+      return { id: book.id, type: "book", text, title: book.title, date, ts: book.updatedAt || book.createdAt };
+    }),
+    ...articles.map(article => ({
+      id: article.id, type: "article", text: "Logged article",
+      title: article.title, date: formatActivityDate(article.updatedAt || article.createdAt),
+      ts: article.updatedAt || article.createdAt,
+    })),
+  ].sort((a, b) => {
+    const ta = a.ts?.toDate ? a.ts.toDate() : new Date(0);
+    const tb = b.ts?.toDate ? b.ts.toDate() : new Date(0);
+    return tb - ta;
   });
 
-  // Build activity entries
-  const activityEntries = [...books]
-    .sort((a, b) => {
-      const ta = a.updatedAt?.toDate ? a.updatedAt.toDate() : new Date(0);
-      const tb = b.updatedAt?.toDate ? b.updatedAt.toDate() : new Date(0);
-      return tb - ta;
-    })
-    .map(book => {
-      const date = formatActivityDate(book.updatedAt || book.createdAt);
-      if (book.currentlyReading) return { id: book.id, text: `Marked as currently reading`, title: book.title, date };
-      if (book.rating > 0 && book.notes) return { id: book.id, text: `Read and reviewed`, title: book.title, date };
-      if (book.rating > 0) return { id: book.id, text: `Read and rated`, title: book.title, date };
-      return { id: book.id, text: `Logged`, title: book.title, date };
-    });
+  // Stats
+  const thisYear = new Date().getFullYear();
+  const totalBooks = books.length;
+  const booksThisYear = books.filter(b => {
+    const d = new Date(b.dateRead); return !isNaN(d) && d.getFullYear() === thisYear;
+  }).length;
+  const totalArticles = articles.length;
+  const articlesThisYear = articles.filter(a => {
+    const d = new Date(a.dateRead); return !isNaN(d) && d.getFullYear() === thisYear;
+  }).length;
 
   const cardStyle = { background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, overflow: "hidden" };
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px 60px" }}>
-      <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
 
-          {/* Currently Reading */}
           {currentlyReading.length > 0 && (
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 16, color: "#444", fontWeight: 500, marginBottom: 10 }}>Currently Reading</div>
-              <div style={{ ...cardStyle }}>
+            <div>
+              <div style={{ fontSize: 15, color: "#444", fontWeight: 500, marginBottom: 10 }}>Currently Reading</div>
+              <div style={cardStyle}>
                 {currentlyReading.map((book, i) => (
                   <div key={book.id} onClick={() => onSelect(book.id)}
                     style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 16px", borderBottom: i === currentlyReading.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: "pointer" }}
@@ -93,17 +111,18 @@ export default function BookList({ userId, onSelect }) {
             </div>
           )}
 
-          {/* Activity */}
-          {!loading && activityEntries.length > 0 && (
+          {!loading && allActivity.length > 0 && (
             <div>
-              <div style={{ fontSize: 16, color: "#444", fontWeight: 500, marginBottom: 10 }}>Activity</div>
+              <div style={{ fontSize: 15, color: "#444", fontWeight: 500, marginBottom: 10 }}>Activity</div>
               <div style={cardStyle}>
-                {activityEntries.map((entry, i) => (
-                  <div key={entry.id} onClick={() => onSelect(entry.id)}
-                    style={{ padding: "12px 16px", borderBottom: i === activityEntries.length - 1 ? "none" : "0.5px solid #ebebeb", fontSize: 14, color: "#444", cursor: "pointer", lineHeight: 1.5 }}
+                {allActivity.map((entry, i) => (
+                  <div key={`${entry.type}-${entry.id}`}
+                    onClick={() => entry.type === "book" ? onSelect(entry.id) : onSelectArticle(entry.id)}
+                    style={{ padding: "12px 16px", borderBottom: i === allActivity.length - 1 ? "none" : "0.5px solid #ebebeb", fontSize: 14, color: "#444", cursor: "pointer", lineHeight: 1.5 }}
                     onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
                     onMouseLeave={e => e.currentTarget.style.background = "none"}>
                     {entry.text} <strong style={{ color: "#333" }}>{entry.title}</strong> on {entry.date}.
+                    {entry.type === "article" && <span style={{ fontSize: 11, color: "#e8318a", border: "1px solid #e8318a", borderRadius: 3, padding: "1px 6px", marginLeft: 8 }}>article</span>}
                   </div>
                 ))}
               </div>
@@ -111,60 +130,70 @@ export default function BookList({ userId, onSelect }) {
           )}
 
           {loading && <p style={{ color: "#aaa", fontSize: 15, padding: "20px 0" }}>loading...</p>}
-          {!loading && books.length === 0 && <p style={{ fontSize: 15, color: "#aaa", padding: "20px 0" }}>no books yet — tap "Log it" to add your first</p>}
+          {!loading && books.length === 0 && articles.length === 0 && <p style={{ fontSize: 15, color: "#aaa", padding: "20px 0" }}>no books yet — tap "Log it" to add your first</p>}
         </div>
 
         {/* Sidebar */}
-        {(shelves.length > 0 || tags.length > 0) && (
-          <div style={{ width: 190, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, marginTop: 26 }}>
-            {(() => {
-              const thisYear = new Date().getFullYear();
-              const totalLogged = books.length;
-              const thisYearLogged = books.filter(b => {
-                if (!b.dateRead) return false;
-                const d = new Date(b.dateRead);
-                return !isNaN(d) && d.getFullYear() === thisYear;
-              }).length;
-              return (
-                <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, overflow: "hidden" }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: "#444", borderBottom: "1px solid #e0e0e0", padding: "14px 16px 10px" }}>Stats</div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "0.5px solid #ebebeb" }}>
-                    <span style={{ fontSize: 14, color: "#444" }}>Total logged</span>
-                    <span style={{ fontSize: 14, color: "#888" }}>{totalLogged}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px" }}>
-                    <span style={{ fontSize: 14, color: "#444" }}>{thisYear}</span>
-                    <span style={{ fontSize: 14, color: "#888" }}>{thisYearLogged}</span>
-                  </div>
-                </div>
-              );
-            })()}
-            {shelves.length > 0 && (
-              <div style={cardStyle}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "#444", borderBottom: "1px solid #e0e0e0", padding: "14px 16px 10px" }}>Shelves</div>
-                {shelves.map((shelf, i) => (
-                  <div key={shelf} onClick={() => { setActiveTag(null); setActiveShelf(p => p === shelf ? null : shelf); }}
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: i === shelves.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: "pointer" }}>
-                    <span style={{ fontSize: 14, color: activeShelf === shelf ? "#cc0000" : "#0000ee", textDecoration: "underline" }}>{shelf}</span>
-                    <span style={{ fontSize: 12, color: "#aaa" }}>{books.filter(b => (b.shelves || []).includes(shelf)).length}</span>
-                  </div>
-                ))}
+        <div style={{ width: 190, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* Stats */}
+          <div style={cardStyle}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#444", borderBottom: "1px solid #e0e0e0", padding: "14px 16px 10px" }}>Stats</div>
+            <div style={{ padding: "10px 16px", borderBottom: "0.5px solid #ebebeb" }}>
+              <div style={{ fontSize: 12, color: "#aaa", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>Books</div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 13, color: "#444" }}>Total</span>
+                <span style={{ fontSize: 13, color: "#888" }}>{totalBooks}</span>
               </div>
-            )}
-            {tags.length > 0 && (
-              <div style={cardStyle}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "#444", borderBottom: "1px solid #e0e0e0", padding: "14px 16px 10px" }}>Tags</div>
-                {tags.map((tag, i) => (
-                  <div key={tag} onClick={() => { setActiveShelf(null); setActiveTag(p => p === tag ? null : tag); }}
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: i === tags.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: "pointer" }}>
-                    <span style={{ fontSize: 14, color: activeTag === tag ? "#cc0000" : "#0000ee", textDecoration: "underline" }}>#{tag}</span>
-                    <span style={{ fontSize: 12, color: "#aaa" }}>{books.filter(b => (b.tags || []).includes(tag)).length}</span>
-                  </div>
-                ))}
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                <span style={{ fontSize: 13, color: "#444" }}>{thisYear}</span>
+                <span style={{ fontSize: 13, color: "#888" }}>{booksThisYear}</span>
               </div>
-            )}
+            </div>
+            <div style={{ padding: "10px 16px" }}>
+              <div style={{ fontSize: 12, color: "#aaa", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>Articles</div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 13, color: "#444" }}>Total</span>
+                <span style={{ fontSize: 13, color: "#888" }}>{totalArticles}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                <span style={{ fontSize: 13, color: "#444" }}>{thisYear}</span>
+                <span style={{ fontSize: 13, color: "#888" }}>{articlesThisYear}</span>
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* Shelves */}
+          {shelves.length > 0 && (
+            <div style={cardStyle}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#444", borderBottom: "1px solid #e0e0e0", padding: "14px 16px 10px" }}>Shelves</div>
+              {shelves.map((shelf, i) => (
+                <div key={shelf} onClick={() => onShelfClick(shelf)}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: i === shelves.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                  <span style={{ fontSize: 14, color: "#0000ee", textDecoration: "underline" }}>{shelf}</span>
+                  <span style={{ fontSize: 12, color: "#aaa" }}>{books.filter(b => (b.shelves || []).includes(shelf)).length}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Tags */}
+          {tags.length > 0 && (
+            <div style={cardStyle}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#444", borderBottom: "1px solid #e0e0e0", padding: "14px 16px 10px" }}>Tags</div>
+              {tags.map((tag, i) => (
+                <div key={tag} onClick={() => onTagClick(tag)}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: i === tags.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                  <span style={{ fontSize: 14, color: "#0000ee", textDecoration: "underline" }}>#{tag}</span>
+                  <span style={{ fontSize: 12, color: "#aaa" }}>{books.filter(b => (b.tags || []).includes(tag)).length}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
