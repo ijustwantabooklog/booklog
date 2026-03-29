@@ -227,32 +227,22 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
           </div>
         </div>
 
-        {/* currently reading checkbox */}
+        {/* currently reading + partial read combined row */}
         <div style={{ ...card, marginBottom: 10 }}>
-          <div style={{ ...cardRow, cursor: "pointer" }} onClick={() => update("currentlyReading", !form.currentlyReading)}>
-            <span style={cardLabel}>Currently reading</span>
-            <div style={{
-              width: 18, height: 18, borderRadius: 4, border: "1.5px solid",
-              borderColor: form.currentlyReading ? "#e8318a" : "#ccc",
-              background: form.currentlyReading ? "#e8318a" : "#fff",
-              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-            }}>
-              {form.currentlyReading && <span style={{ color: "#fff", fontSize: 12, lineHeight: 1, marginTop: -1 }}>✓</span>}
+          <div style={{ display: "flex", padding: "12px 16px", gap: 0 }}>
+            <div onClick={() => update("currentlyReading", !form.currentlyReading)}
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", paddingRight: 16, borderRight: "1px solid #f0f0f0" }}>
+              <span style={{ fontSize: 12, color: "#aaa" }}>Currently reading</span>
+              <div style={{ width: 18, height: 18, borderRadius: 4, border: "1.5px solid", borderColor: form.currentlyReading ? "#e8318a" : "#ccc", background: form.currentlyReading ? "#e8318a" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {form.currentlyReading && <span style={{ color: "#fff", fontSize: 12, lineHeight: 1, marginTop: -1 }}>✓</span>}
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* partial read */}
-        <div style={{ ...card, marginBottom: 10 }}>
-          <div style={{ ...cardRow, cursor: "pointer" }} onClick={() => update("partialRead", !form.partialRead)}>
-            <span style={cardLabel}>Partial read</span>
-            <div style={{
-              width: 18, height: 18, borderRadius: 4, border: "1.5px solid",
-              borderColor: form.partialRead ? "#e8318a" : "#ccc",
-              background: form.partialRead ? "#e8318a" : "#fff",
-              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-            }}>
-              {form.partialRead && <span style={{ color: "#fff", fontSize: 12, lineHeight: 1, marginTop: -1 }}>✓</span>}
+            <div onClick={() => update("partialRead", !form.partialRead)}
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", paddingLeft: 16 }}>
+              <span style={{ fontSize: 12, color: "#aaa" }}>Partial read</span>
+              <div style={{ width: 18, height: 18, borderRadius: 4, border: "1.5px solid", borderColor: form.partialRead ? "#e8318a" : "#ccc", background: form.partialRead ? "#e8318a" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {form.partialRead && <span style={{ color: "#fff", fontSize: 12, lineHeight: 1, marginTop: -1 }}>✓</span>}
+              </div>
             </div>
           </div>
           {form.partialRead && (
@@ -308,58 +298,52 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
             <StarRating value={form.rating} onChange={v => update("rating", v)} />
           </div>
 
-          {/* Shelves */}
-          <div style={{ borderTop: "1px solid #e8e8e8", padding: "12px 16px", position: "relative" }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
-              <span style={{ ...cardLabel, paddingTop: form.shelves.length > 0 ? 6 : 0 }}>Shelves</span>
-              <div style={{ flex: 1 }}>
-                {form.shelves.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-                    {form.shelves.map(s => (
-                      <span key={s} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#1a1a1a", color: "#fff", borderRadius: 20, padding: "3px 10px", fontSize: 12 }}>
-                        {s}<span onClick={() => removeShelf(s)} style={{ cursor: "pointer", opacity: 0.6, fontSize: 14, lineHeight: 1 }}>×</span>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <input value={shelfInput} onChange={e => setShelfInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addShelf(); } }} onBlur={() => { if (shelfInput.trim()) addShelf(); }}
-                  placeholder="Favourites"
-                  style={{ ...bareInput, fontSize: 14, width: "100%", color: shelfInput ? "#1a1a1a" : "#bbb" }} />
-                {shelfSuggestions.length > 0 && (
-                  <div style={{ position: "absolute", left: 88, right: 16, zIndex: 50, background: "#fff", border: "1px solid #e0e0e0", borderRadius: 6, marginTop: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
-                    {shelfSuggestions.map(s => (
-                      <div key={s} onClick={() => addShelf(s)}
-                        style={{ padding: "8px 12px", fontSize: 13, cursor: "pointer", color: "#333" }}
-                        onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
-                        onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
-                        {s}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+          {/* Shelves + Tags in one row */}
+          <div style={{ borderTop: "1px solid #e8e8e8", padding: "12px 16px", position: "relative", display: "flex", gap: 16, alignItems: "flex-start" }}>
+            {/* Shelves */}
+            <div style={{ flex: 1, borderRight: "1px solid #f0f0f0", paddingRight: 16 }}>
+              <div style={{ fontSize: 12, color: "#aaa", marginBottom: 6 }}>Shelves</div>
+              {form.shelves.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+                  {form.shelves.map(s => (
+                    <span key={s} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#1a1a1a", color: "#fff", borderRadius: 20, padding: "3px 10px", fontSize: 12 }}>
+                      {s}<span onClick={() => removeShelf(s)} style={{ cursor: "pointer", opacity: 0.6, fontSize: 14, lineHeight: 1 }}>×</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <input value={shelfInput} onChange={e => setShelfInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addShelf(); } }} onBlur={() => { if (shelfInput.trim()) addShelf(); }}
+                placeholder="Favourites"
+                style={{ ...bareInput, fontSize: 14, width: "100%", color: shelfInput ? "#1a1a1a" : "#bbb" }} />
+              {shelfSuggestions.length > 0 && (
+                <div style={{ position: "absolute", left: 16, width: "45%", zIndex: 50, background: "#fff", border: "1px solid #e0e0e0", borderRadius: 6, marginTop: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+                  {shelfSuggestions.map(s => (
+                    <div key={s} onClick={() => addShelf(s)}
+                      style={{ padding: "8px 12px", fontSize: 13, cursor: "pointer", color: "#333" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+                      {s}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-
-          {/* Tags */}
-          <div style={{ borderTop: "1px solid #e8e8e8", padding: "12px 16px" }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
-              <span style={{ ...cardLabel, paddingTop: form.tags.length > 0 ? 6 : 0 }}>Tags</span>
-              <div style={{ flex: 1 }}>
-                {form.tags.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-                    {form.tags.map(t => (
-                      <span key={t} style={{ fontSize: 13, color: "#555", fontFamily: "Georgia, serif", fontStyle: "italic" }}>
-                        #{t}<span onClick={() => removeTag(t)} style={{ marginLeft: 4, cursor: "pointer", color: "#ccc", fontStyle: "normal", fontFamily: "inherit" }}>×</span>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={addTag}
-                  placeholder="Literary Fiction"
-                  style={{ ...bareInput, fontSize: 14, width: "100%", color: tagInput ? "#1a1a1a" : "#bbb" }} />
-              </div>
+            {/* Tags */}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, color: "#aaa", marginBottom: 6 }}>Tags</div>
+              {form.tags.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+                  {form.tags.map(t => (
+                    <span key={t} style={{ fontSize: 13, color: "#555", fontStyle: "italic" }}>
+                      #{t}<span onClick={() => removeTag(t)} style={{ marginLeft: 4, cursor: "pointer", color: "#ccc", fontStyle: "normal" }}>×</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={addTag}
+                placeholder="Literary Fiction"
+                style={{ ...bareInput, fontSize: 14, width: "100%", color: tagInput ? "#1a1a1a" : "#bbb" }} />
             </div>
           </div>
 
