@@ -14,16 +14,22 @@ export default function AllBooks({ userId, onSelect }) {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("alpha");
 
   useEffect(() => {
-    const q = query(collection(db, "users", userId, "books"), orderBy("title"));
+    const q = query(collection(db, "users", userId, "books"), orderBy("createdAt", "desc"));
     return onSnapshot(q, (snap) => {
       setBooks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
   }, [userId]);
 
-  const filtered = books.filter(b =>
+  const sorted = [...books].sort((a, b) => {
+    if (sort === "alpha") return (a.title || "").localeCompare(b.title || "");
+    return 0; // already sorted by createdAt desc from firebase
+  });
+
+  const filtered = sorted.filter(b =>
     b.title?.toLowerCase().includes(search.toLowerCase()) ||
     b.author?.toLowerCase().includes(search.toLowerCase())
   );
@@ -32,16 +38,24 @@ export default function AllBooks({ userId, onSelect }) {
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px 60px" }}>
-      <input
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        placeholder="Search by title or author..."
-        style={{
-          width: "100%", padding: "10px 14px", fontSize: 14,
-          border: "1px solid #e2e2e2", borderRadius: 10, background: "#fff",
-          outline: "none", marginBottom: 12,
-        }}
-      />
+      <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search by title or author..."
+          style={{ flex: 1, padding: "10px 14px", fontSize: 14, border: "1px solid #e2e2e2", borderRadius: 10, background: "#fff", outline: "none" }}
+        />
+        <div style={{ display: "flex", background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, overflow: "hidden", flexShrink: 0 }}>
+          {[["alpha", "A–Z"], ["date", "Date added"]].map(([val, label]) => (
+            <button key={val} onClick={() => setSort(val)} style={{
+              padding: "10px 16px", fontSize: 13, border: "none", cursor: "pointer",
+              background: sort === val ? "#e8318a" : "none",
+              color: sort === val ? "#fff" : "#888",
+              borderRight: val === "alpha" ? "1px solid #e2e2e2" : "none",
+            }}>{label}</button>
+          ))}
+        </div>
+      </div>
 
       {loading && <p style={{ color: "#aaa", fontSize: 15, padding: "20px 0" }}>loading...</p>}
       {!loading && filtered.length === 0 && <p style={{ color: "#aaa", fontSize: 15, padding: "20px 0" }}>no books found</p>}
