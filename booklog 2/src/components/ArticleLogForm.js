@@ -97,6 +97,33 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
           </button>
         </div>
 
+        {/* URL search bar */}
+        <div style={{ position: "relative", marginBottom: 20 }}>
+          <input
+            value={urlInput}
+            onChange={e => setUrlInput(e.target.value)}
+            onKeyDown={async e => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                if (!urlInput.trim()) return;
+                setFetchingUrl(true);
+                update("url", urlInput.trim());
+                const meta = await fetchMetadata(urlInput.trim());
+                if (meta) {
+                  if (meta.title) update("title", meta.title);
+                  if (meta.author) update("author", meta.author);
+                  if (meta.publication) update("publication", meta.publication);
+                  if (meta.datePublished) update("datePublished", meta.datePublished);
+                }
+                setFetchingUrl(false);
+              }
+            }}
+            placeholder="Paste a URL and press Enter to autofill..."
+            style={{ width: "100%", padding: "10px 14px", fontSize: 14, border: "1px solid #e0e0e0", borderRadius: 8, background: "#fff", outline: "none" }}
+          />
+          {fetchingUrl && <span style={{ position: "absolute", right: 12, top: 10, fontSize: 12, color: "#aaa" }}>fetching...</span>}
+        </div>
+
         {/* article info */}
         <div style={{ marginBottom: 20 }}>
           <input value={form.title} onChange={e => update("title", e.target.value)} placeholder="Title"
@@ -108,28 +135,9 @@ export default function ArticleLogForm({ article, userId, onCancel, onSave }) {
           <input value={form.datePublished} onChange={e => update("datePublished", e.target.value)} placeholder="Date published"
             style={{ ...bareInput, fontSize: 15, color: "#555", display: "block", width: "100%", marginBottom: 4 }} />
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input value={urlInput} onChange={e => setUrlInput(e.target.value)}
-              onKeyDown={async e => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  if (!urlInput.trim()) return;
-                  setFetchingUrl(true);
-                  update("url", urlInput.trim());
-                  const meta = await fetchMetadata(urlInput.trim());
-                  if (meta) {
-                    if (meta.title && !form.title) update("title", meta.title);
-                    if (meta.author && !form.author) update("author", meta.author);
-                    if (meta.publication && !form.publication) update("publication", meta.publication);
-                    if (meta.datePublished && !form.datePublished) update("datePublished", meta.datePublished);
-                    update("url", urlInput.trim());
-                  }
-                  setFetchingUrl(false);
-                }
-              }}
-              placeholder="Paste URL and press Enter to autofill..."
-              style={{ ...bareInput, fontSize: 14, color: "#0000ee", flex: 1 }} />
-            {fetchingUrl && <span style={{ fontSize: 12, color: "#aaa" }}>fetching...</span>}
-          </div>
+            <input value={form.url} onChange={e => update("url", e.target.value)}
+            placeholder="URL"
+            style={{ ...bareInput, fontSize: 14, color: "#0000ee", display: "block", width: "100%" }} />
         </div>
 
         {/* date */}
