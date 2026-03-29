@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
-import { doc, onSnapshot, deleteDoc } from "firebase/firestore";
+import { doc, onSnapshot, deleteDoc, collection, query, orderBy, addDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 
 function StarDisplay({ value, size = 20 }) {
   return (
@@ -14,11 +14,21 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
   const [book, setBook] = useState(null);
   const [showCitation, setShowCitation] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [tab, setTab] = useState("log");
+  const [ruminations, setRuminations] = useState([]);
+  const [newRumination, setNewRumination] = useState("");
+  const [editingRumIndex, setEditingRumIndex] = useState(null);
+  const [editingRumText, setEditingRumText] = useState("");
 
   useEffect(() => {
-    return onSnapshot(doc(db, "users", userId, "books", bookId), (d) => {
+    const unsubRum = onSnapshot(
+      query(collection(db, "users", userId, "books", bookId, "ruminations"), orderBy("createdAt", "desc")),
+      snap => setRuminations(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    );
+    const unsubBook = onSnapshot(doc(db, "users", userId, "books", bookId), (d) => {
       if (d.exists()) setBook({ id: d.id, ...d.data() });
     });
+    return () => { unsubRum(); unsubBook(); };
   }, [bookId, userId]);
 
   const handleDelete = async () => {
@@ -28,6 +38,26 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
   };
 
   if (!book) return <div style={{ padding: 40, color: "#aaa", fontSize: 14 }}>loading...</div>;
+
+  const addRumination = async () => {
+    if (!newRumination.trim()) return;
+    await addDoc(collection(db, "users", userId, "books", bookId, "ruminations"), {
+      text: newRumination.trim(),
+      createdAt: serverTimestamp(),
+    });
+    setNewRumination("");
+  };
+
+  const saveEditRumination = async (id) => {
+    if (!editingRumText.trim()) return;
+    await updateDoc(doc(db, "users", userId, "books", bookId, "ruminations", id), { text: editingRumText.trim() });
+    setEditingRumIndex(null);
+    setEditingRumText("");
+  };
+
+  const deleteRumination = async (id) => {
+    await deleteDoc(doc(db, "users", userId, "books", bookId, "ruminations", id));
+  };
 
   const generateMLA = () => {
     const author = book.author || "";
@@ -60,6 +90,17 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
+        {["log", "ruminations"].map(t => (
+          <span key={t} onClick={() => setTab(t)}
+            style={{ fontSize: 15, color: tab === t ? "#1a1a1a" : "#aaa", fontWeight: tab === t ? 500 : 400, cursor: "pointer", textTransform: "capitalize" }}>
+            {t}
+          </span>
+        ))}
+      </div>
+
+      {tab === "log" && <>
       <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, padding: "24px" }}>
         <div style={{ fontSize: 11, color: "#aaa", marginBottom: 16 }}>book</div>
         <div style={{ display: "flex", gap: 24, alignItems: "flex-start", marginBottom: 24 }}>
@@ -130,6 +171,55 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
               ))}
             </div>
           )}
+        </div>
+      )}
+      </>}
+
+      {tab === "ruminations" && (
+        <div>
+          <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, overflow: "hidden", marginBottom: 10 }}>
+            {ruminations.length === 0 && (
+              <div style={{ padding: "16px", fontSize: 14, color: "#aaa" }}>No ruminations yet.</div>
+            )}
+            {ruminations.map((rum, i) => (
+              <div key={rum.id} style={{ padding: "14px 16px", borderBottom: i === ruminations.length - 1 ? "none" : "0.5px solid #f0f0f0", background: "#f7f7f7" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                  {editingRumIndex === i ? (
+                    <div style={{ flex: 1 }}>
+                      <textarea value={editingRumText} onChange={e => setEditingRumText(e.target.value)}
+                        rows={3} autoFocus
+                        style={{ width: "100%", fontSize: 14, border: "1px solid #e0e0e0", borderRadius: 6, padding: "8px 10px", resize: "none", outline: "none", fontFamily: "inherit", lineHeight: 1.6, boxSizing: "border-box" }} />
+                      <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
+                        <button onClick={() => saveEditRumination(rum.id)} style={{ background: "#e8318a", color: "#fff", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 12, cursor: "pointer" }}>Save</button>
+                        <button onClick={() => setEditingRumIndex(null)} style={{ background: "none", border: "none", color: "#aaa", fontSize: 12, cursor: "pointer" }}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: 14, color: "#333", lineHeight: 1.7, margin: 0, flex: 1 }}>{rum.text}</p>
+                  )}
+                  {editingRumIndex !== i && (
+                    <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+                      <button onClick={() => { setEditingRumIndex(i); setEditingRumText(rum.text); }} style={{ background: "none", border: "none", color: "#aaa", fontSize: 12, cursor: "pointer", padding: 0 }}>edit</button>
+                      <button onClick={() => deleteRumination(rum.id)} style={{ background: "none", border: "none", color: "#ccc", fontSize: 14, cursor: "pointer", padding: 0 }}>×</button>
+                    </div>
+                  )}
+                </div>
+                <div style={{ fontSize: 11, color: "#bbb", marginTop: 6 }}>
+                  {rum.createdAt?.toDate ? rum.createdAt.toDate().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : ""}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, padding: "16px" }}>
+            <textarea value={newRumination} onChange={e => setNewRumination(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addRumination(); } }}
+              placeholder="Add a rumination... (Enter to save)"
+              rows={3}
+              style={{ width: "100%", fontSize: 14, border: "none", outline: "none", resize: "none", fontFamily: "inherit", lineHeight: 1.6, padding: 0, boxSizing: "border-box" }} />
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+              <button onClick={addRumination} style={{ background: "#e8318a", color: "#fff", border: "none", borderRadius: 6, padding: "5px 14px", fontSize: 13, cursor: "pointer" }}>Add</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
