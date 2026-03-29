@@ -85,7 +85,7 @@ function Nav({ firstName, page, setPage, onNew, onSignOut }) {
           <span onClick={onSignOut} style={{ fontSize: 13, color: "#aaa", cursor: "pointer" }}>sign out</span>
         </div>
       </div>
-      <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, padding: "12px 16px", display: "flex", gap: 20, marginTop: 4 }}>
+      <div style={{ display: "flex", gap: 20, padding: "12px 0 20px" }}>
         <span onClick={() => setPage("home")} style={{ fontSize: 15, color: page === "home" ? "#1a1a1a" : "#aaa", fontWeight: page === "home" ? 500 : 400, cursor: "pointer" }}>Home</span>
         <span onClick={() => setPage("diary")} style={{ fontSize: 15, color: page === "diary" ? "#1a1a1a" : "#aaa", fontWeight: page === "diary" ? 500 : 400, cursor: "pointer" }}>Diary</span>
       </div>
