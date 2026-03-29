@@ -302,48 +302,56 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
           <div style={{ borderTop: "1px solid #e8e8e8", padding: "12px 16px", position: "relative", display: "flex", gap: 16, alignItems: "flex-start" }}>
             {/* Shelves */}
             <div style={{ flex: 1, borderRight: "1px solid #f0f0f0", paddingRight: 16 }}>
-              <div style={{ fontSize: 12, color: "#aaa", marginBottom: 6 }}>Shelves</div>
-              {form.shelves.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
-                  {form.shelves.map(s => (
-                    <span key={s} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#1a1a1a", color: "#fff", borderRadius: 20, padding: "3px 10px", fontSize: 12 }}>
-                      {s}<span onClick={() => removeShelf(s)} style={{ cursor: "pointer", opacity: 0.6, fontSize: 14, lineHeight: 1 }}>×</span>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <input value={shelfInput} onChange={e => setShelfInput(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addShelf(); } }} onBlur={() => { if (shelfInput.trim()) addShelf(); }}
-                placeholder="Favourites"
-                style={{ ...bareInput, fontSize: 14, width: "100%", color: shelfInput ? "#1a1a1a" : "#bbb" }} />
-              {shelfSuggestions.length > 0 && (
-                <div style={{ position: "absolute", left: 16, width: "45%", zIndex: 50, background: "#fff", border: "1px solid #e0e0e0", borderRadius: 6, marginTop: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
-                  {shelfSuggestions.map(s => (
-                    <div key={s} onClick={() => addShelf(s)}
-                      style={{ padding: "8px 12px", fontSize: 13, cursor: "pointer", color: "#333" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
-                      onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
-                      {s}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <span style={{ ...cardLabel, paddingTop: 2 }}>Shelves</span>
+                <div style={{ flex: 1 }}>
+                  {form.shelves.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+                      {form.shelves.map(s => (
+                        <span key={s} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#1a1a1a", color: "#fff", borderRadius: 20, padding: "3px 10px", fontSize: 12 }}>
+                          {s}<span onClick={() => removeShelf(s)} style={{ cursor: "pointer", opacity: 0.6, fontSize: 14, lineHeight: 1 }}>×</span>
+                        </span>
+                      ))}
                     </div>
-                  ))}
+                  )}
+                  <input value={shelfInput} onChange={e => setShelfInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addShelf(); } }} onBlur={() => { if (shelfInput.trim()) addShelf(); }}
+                    placeholder="Favourites"
+                    style={{ ...bareInput, fontSize: 14, width: "100%" }} />
+                  {shelfSuggestions.length > 0 && (
+                    <div style={{ position: "absolute", left: 16, width: "45%", zIndex: 50, background: "#fff", border: "1px solid #e0e0e0", borderRadius: 6, marginTop: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+                      {shelfSuggestions.map(s => (
+                        <div key={s} onClick={() => addShelf(s)}
+                          style={{ padding: "8px 12px", fontSize: 13, cursor: "pointer", color: "#333" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
+                          onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+                          {s}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
             {/* Tags */}
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, color: "#aaa", marginBottom: 6 }}>Tags</div>
-              {form.tags.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
-                  {form.tags.map(t => (
-                    <span key={t} style={{ fontSize: 13, color: "#555", fontStyle: "italic" }}>
-                      #{t}<span onClick={() => removeTag(t)} style={{ marginLeft: 4, cursor: "pointer", color: "#ccc", fontStyle: "normal" }}>×</span>
-                    </span>
-                  ))}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <span style={{ ...cardLabel, paddingTop: 2 }}>Tags</span>
+                <div style={{ flex: 1 }}>
+                  {form.tags.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+                      {form.tags.map(t => (
+                        <span key={t} style={{ fontSize: 13, color: "#555", fontStyle: "italic" }}>
+                          #{t}<span onClick={() => removeTag(t)} style={{ marginLeft: 4, cursor: "pointer", color: "#ccc", fontStyle: "normal" }}>×</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={addTag}
+                    placeholder="Literary Fiction"
+                    style={{ ...bareInput, fontSize: 14, width: "100%" }} />
                 </div>
-              )}
-              <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={addTag}
-                placeholder="Literary Fiction"
-                style={{ ...bareInput, fontSize: 14, width: "100%", color: tagInput ? "#1a1a1a" : "#bbb" }} />
+              </div>
             </div>
           </div>
 
