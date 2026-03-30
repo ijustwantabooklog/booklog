@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { auth, provider, db } from "./firebase";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
-import BookList from "./components/BookList";
 import Home from "./components/Home";
 import BookDetail from "./components/BookDetail";
 import LogForm from "./components/LogForm";
