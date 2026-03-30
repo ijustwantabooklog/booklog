@@ -59,13 +59,14 @@ function BookFocus({ book, userId, onBack, onViewDetail }) {
   const cardStyle = { background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, overflow: "hidden", marginBottom: 10 };
 
   return (
-    <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 20px 60px" }}>
+    <div style={{ position: "fixed", inset: 0, background: "#f4f4f4", zIndex: 1000, overflowY: "auto" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 20px 60px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0 20px" }}>
-        <button onClick={onBack} style={ghostBtn}>← back</button>
         <div style={{ display: "flex", gap: 16 }}>
           <button onClick={markAsRead} style={{ ...ghostBtn, color: "#aaa" }}>mark as read</button>
           <button onClick={() => onViewDetail(book.id)} style={ghostBtn}>view log</button>
         </div>
+        <button onClick={onBack} style={{ background: "none", border: "none", color: "#aaa", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}>×</button>
       </div>
 
       {/* Book header */}
@@ -160,6 +161,7 @@ function BookFocus({ book, userId, onBack, onViewDetail }) {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }
