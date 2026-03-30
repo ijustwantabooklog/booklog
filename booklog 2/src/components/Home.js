@@ -252,66 +252,74 @@ export default function Home({ userId, onSelect }) {
     });
   };
 
+  const sectionHead = { fontFamily: "Arial, sans-serif", fontSize: 12, fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px", color: "#555", borderBottom: "1px solid #ccc", paddingBottom: 3, marginBottom: 8 };
+
   return (
-    <div style={{ maxWidth: 860, margin: "0 auto", padding: "24px 32px 60px" }}>
-      {loading && <p style={{ color: "#aaa", fontSize: 15, padding: "20px 0" }}>loading...</p>}
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "16px" }}>
+      {loading && <p style={{ color: "#666", fontSize: 14, fontStyle: "italic" }}>loading...</p>}
 
       {!loading && currentlyReading.length === 0 && (
-        <div style={{ ...cardStyle, padding: "32px 24px", textAlign: "center", marginBottom: 16 }}>
-          <p style={{ color: "#aaa", fontSize: 15, margin: 0 }}>Nothing currently reading.</p>
-        </div>
+        <p style={{ color: "#666", fontStyle: "italic" }}>Nothing currently reading.</p>
       )}
 
       {currentlyReading.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 11, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 8 }}>Currently Reading</div>
-          {currentlyReading.map((book, i) => (
-            <div key={book.id} onClick={() => setFocusedBook(book)}
-              style={{ display: "flex", gap: 12, alignItems: "center", padding: "10px 0", borderBottom: "0.5px solid #f0f0f0", cursor: "pointer" }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
-              onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-              {book.coverUrl
-                ? <img src={book.coverUrl} alt={book.title} style={{ width: 36, height: 52, objectFit: "cover", border: "0.5px solid #e0e0e0", borderRadius: 2, flexShrink: 0 }} />
-                : <div style={{ width: 36, height: 52, background: "#e8e8e8", border: "0.5px solid #e0e0e0", borderRadius: 2, flexShrink: 0 }} />}
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: "Georgia, serif", fontSize: 15, color: "#1a1a1a", marginBottom: 2 }}>{book.title}</div>
-                <div style={{ fontSize: 12, color: "#888" }}>{book.author}</div>
-              </div>
-              <span style={{ fontSize: 13, color: "#ccc" }}>→</span>
-            </div>
-          ))}
+        <div style={{ marginBottom: 20 }}>
+          <div style={sectionHead}>Currently Reading</div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <tbody>
+              {currentlyReading.map(book => (
+                <tr key={book.id} onClick={() => setFocusedBook(book)} style={{ cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                  <td style={{ width: 44, padding: "5px 8px 5px 0", verticalAlign: "top" }}>
+                    {book.coverUrl
+                      ? <img src={book.coverUrl} alt={book.title} style={{ width: 36, height: 52, objectFit: "cover", border: "1px solid #999", display: "block" }} />
+                      : <div style={{ width: 36, height: 52, border: "1px solid #999", background: "#ddd" }} />}
+                  </td>
+                  <td style={{ padding: "5px 8px", verticalAlign: "top" }}>
+                    <div style={{ fontFamily: "Georgia, serif", fontSize: 15, color: "#00e", textDecoration: "underline" }}>{book.title}</div>
+                    <div style={{ fontFamily: "Arial, sans-serif", fontSize: 12, color: "#555", marginTop: 2 }}>{book.author}</div>
+                  </td>
+                  <td style={{ textAlign: "right", verticalAlign: "middle", padding: "5px 0 5px 8px", whiteSpace: "nowrap" }}>
+                    <span style={{ fontFamily: "Arial, sans-serif", fontSize: 12, color: "#00e" }}>[open →]</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* Activity feed */}
-      {groups.length > 0 && groups.map(({ label, entries }) => {
-        const lines = summarise(entries);
-        if (lines.length === 0) return null;
-        return (
-          <div key={label} style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 6 }}>{label}</div>
-            {lines.map((line, i) => (
-              <div key={i} onClick={() => line.id && onSelect(line.id)}
-                style={{ padding: "7px 0", borderBottom: "0.5px solid #f0f0f0", fontSize: 14, color: "#666", lineHeight: 1.5, cursor: line.id ? "pointer" : "default" }}
-                onMouseEnter={e => { if (line.id) e.currentTarget.style.color = "#1a1a1a"; }}
-                onMouseLeave={e => e.currentTarget.style.color = "#666"}>
-                {line.actionStr} <span style={{ fontFamily: "Georgia, serif", color: "#1a1a1a" }}>{line.title}</span>
-              </div>
-            ))}
-          </div>
-        );
-      })}
-
-      {!loading && groups.length === 0 && books.filter(b => !b.currentlyReading).slice(0, 4).length > 0 && (
+      {groups.length > 0 && (
         <div>
-          <div style={{ fontSize: 11, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 6 }}>Recently read</div>
-          {books.filter(b => !b.currentlyReading).slice(0, 4).map((book, i) => (
+          <div style={sectionHead}>Recent Activity</div>
+          {groups.map(({ label, entries }) => {
+            const lines = summarise(entries);
+            if (lines.length === 0) return null;
+            return lines.map((line, i) => (
+              <div key={`${label}-${i}`}
+                onClick={() => line.id && onSelect(line.id)}
+                style={{ fontFamily: "Arial, sans-serif", fontSize: 13, color: "#333", padding: "4px 0", borderBottom: "1px solid #eee", cursor: line.id ? "pointer" : "default" }}
+                onMouseEnter={e => { if (line.id) e.currentTarget.style.background = "#f9f9f9"; }}
+                onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                <span style={{ fontWeight: "bold" }}>{label} — </span>
+                {line.actionStr} <span style={{ fontFamily: "Georgia, serif", color: "#00e", textDecoration: "underline" }}>{line.title}</span>
+              </div>
+            ));
+          })}
+        </div>
+      )}
+
+      {!loading && groups.length === 0 && books.filter(b => !b.currentlyReading).length > 0 && (
+        <div>
+          <div style={sectionHead}>Recently Read</div>
+          {books.filter(b => !b.currentlyReading).slice(0, 5).map(book => (
             <div key={book.id} onClick={() => onSelect(book.id)}
-              style={{ padding: "7px 0", borderBottom: "0.5px solid #f0f0f0", fontSize: 14, cursor: "pointer", color: "#666" }}
-              onMouseEnter={e => e.currentTarget.style.color = "#1a1a1a"}
-              onMouseLeave={e => e.currentTarget.style.color = "#666"}>
-              <span style={{ fontFamily: "Georgia, serif", color: "#1a1a1a" }}>{book.title}</span>
-              {book.author && <span style={{ color: "#aaa", fontSize: 13 }}> · {book.author}</span>}
+              style={{ fontFamily: "Arial, sans-serif", fontSize: 13, padding: "4px 0", borderBottom: "1px solid #eee", cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
+              onMouseLeave={e => e.currentTarget.style.background = "none"}>
+              <span style={{ fontFamily: "Georgia, serif", color: "#00e", textDecoration: "underline" }}>{book.title}</span>
+              {book.author && <span style={{ color: "#666" }}> · {book.author}</span>}
             </div>
           ))}
         </div>
