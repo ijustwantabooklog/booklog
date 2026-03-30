@@ -249,22 +249,19 @@ export default function Home({ userId, onSelect }) {
       )}
 
       {currentlyReading.length > 0 && (
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ fontSize: 15, color: "#444", fontWeight: 500, marginBottom: 10 }}>Currently Reading</div>
-          <div style={cardStyle}>
-            {currentlyReading.map((book, i) => (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 15, color: "#444", fontWeight: 500, marginBottom: 12 }}>Currently Reading</div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            {currentlyReading.map(book => (
               <div key={book.id} onClick={() => setFocusedBook(book)}
-                style={{ display: "flex", gap: 16, alignItems: "center", padding: "16px 20px", borderBottom: i === currentlyReading.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                style={{ width: 120, cursor: "pointer", flexShrink: 0 }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
                 {book.coverUrl
-                  ? <img src={book.coverUrl} alt={book.title} style={{ width: 48, height: 68, objectFit: "cover", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0 }} />
-                  : <div style={{ width: 48, height: 68, background: "#e8e8e8", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0 }} />}
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: "Georgia, serif", fontSize: 16, color: "#1a1a1a", marginBottom: 3 }}>{book.title}</div>
-                  <div style={{ fontSize: 13, color: "#888" }}>{book.author}</div>
-                </div>
-                <span style={{ fontSize: 13, color: "#aaa" }}>→</span>
+                  ? <img src={book.coverUrl} alt={book.title} style={{ width: 120, height: 172, objectFit: "cover", border: "1px solid #ddd", borderRadius: 6, display: "block", marginBottom: 8 }} />
+                  : <div style={{ width: 120, height: 172, background: "#e8e8e8", border: "1px solid #ddd", borderRadius: 6, marginBottom: 8 }} />}
+                <div style={{ fontFamily: "Georgia, serif", fontSize: 13, color: "#1a1a1a", lineHeight: 1.3, marginBottom: 3 }}>{book.title}</div>
+                <div style={{ fontSize: 12, color: "#888" }}>{book.author}</div>
               </div>
             ))}
           </div>
