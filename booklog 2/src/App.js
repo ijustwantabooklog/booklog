@@ -165,8 +165,8 @@ function Nav({ username, screen, go, onNew, onSignOut }) {
   const page = ["reading","diary","books","articles","following","projects","profile"].includes(screen.type) ? screen.type : "";
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0 10px" }}>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 32px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0 12px" }}>
         <span style={{ fontSize: 22, color: "#444" }}>
           Reading Archive / <span
             onClick={() => go({ type: "profile" })}
@@ -198,10 +198,10 @@ function Nav({ username, screen, go, onNew, onSignOut }) {
           <span onClick={onSignOut} style={{ fontSize: 13, color: "#aaa", cursor: "pointer" }}>sign out</span>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 20, padding: "12px 0 20px" }}>
+      <div style={{ display: "flex", gap: 24, padding: "0", borderTop: "0.5px solid #f0f0f0", marginTop: 4 }}>
         {tabs.map(([type, label]) => (
           <span key={type} onClick={() => go({ type })}
-            style={{ fontSize: 15, color: page === type ? "#1a1a1a" : "#aaa", fontWeight: page === type ? 500 : 400, cursor: "pointer" }}>
+            style={{ fontSize: 14, color: page === type ? "#1a1a1a" : "#aaa", fontWeight: page === type ? 500 : 400, cursor: "pointer", padding: "10px 0", borderBottom: page === type ? "2px solid #1a1a1a" : "2px solid transparent", marginBottom: -1 }}>
             {label}
           </span>
         ))}
