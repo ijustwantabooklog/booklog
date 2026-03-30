@@ -356,13 +356,13 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
             </div>
           </div>
 
-          {/* Notes */}
-          <div style={{ ...cardRow, borderTop: "1px solid #e8e8e8", alignItems: "flex-start" }}>
-            <span style={{ ...cardLabel, paddingTop: 2 }}>Notes</span>
+          {/* Review — hidden when currently reading */}
+          {!form.currentlyReading && <div style={{ ...cardRow, borderTop: "1px solid #e8e8e8", alignItems: "flex-start" }}>
+            <span style={{ ...cardLabel, paddingTop: 2 }}>Review</span>
             <textarea value={form.notes} onChange={e => update("notes", e.target.value)}
-              placeholder="Write notes..." rows={3}
+              placeholder="Write a review..." rows={3}
               style={{ ...bareInput, flex: 1, fontSize: 14, resize: "vertical", lineHeight: 1.5 }} />
-          </div>
+          </div>}
         </div>
 
         {/* quotes */}
