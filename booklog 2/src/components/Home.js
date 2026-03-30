@@ -228,8 +228,6 @@ export default function Home({ userId, onSelect }) {
   }, [userId]);
 
   const currentlyReading = books.filter(b => b.currentlyReading);
-  const recentlyFinished = books.filter(b => !b.currentlyReading).slice(0, 3);
-  const recentArticles = articles.slice(0, 3);
 
   if (focusedBook) {
     const liveBook = books.find(b => b.id === focusedBook.id) || focusedBook;
@@ -268,47 +266,97 @@ export default function Home({ userId, onSelect }) {
         </div>
       )}
 
-      {!loading && recentlyFinished.length > 0 && (
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ fontSize: 15, color: "#444", fontWeight: 500, marginBottom: 10 }}>Recently Finished</div>
-          <div style={cardStyle}>
-            {recentlyFinished.map((book, i) => (
-              <div key={book.id} onClick={() => onSelect(book.id)}
-                style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 16px", borderBottom: i === recentlyFinished.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                {book.coverUrl
-                  ? <img src={book.coverUrl} alt={book.title} style={{ width: 36, height: 52, objectFit: "cover", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0 }} />
-                  : <div style={{ width: 36, height: 52, background: "#e8e8e8", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0 }} />}
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, color: "#0000ee", textDecoration: "underline", marginBottom: 2, fontFamily: "Georgia, serif" }}>{book.title}</div>
-                  <div style={{ fontSize: 13, color: "#444" }}>{book.author}</div>
-                  {book.rating > 0 && <div style={{ marginTop: 3 }}><StarDisplay value={book.rating} /></div>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!loading && recentArticles.length > 0 && (
-        <div>
-          <div style={{ fontSize: 15, color: "#444", fontWeight: 500, marginBottom: 10 }}>Recent Articles</div>
-          <div style={cardStyle}>
-            {recentArticles.map((article, i) => (
-              <div key={article.id} onClick={() => onSelect(article.id)}
-                style={{ padding: "12px 16px", borderBottom: i === recentArticles.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                <div style={{ fontSize: 15, color: "#0000ee", textDecoration: "underline", marginBottom: 2 }}>{article.title}</div>
-                <div style={{ fontSize: 13, color: "#444" }}>{[article.author, article.publication].filter(Boolean).join(" · ")}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {!loading && <ActivityFeed userId={userId} books={books} articles={articles} />}
     </div>
   );
 }
 
 const ghostBtn = { background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: 13, padding: "4px 0" };
+
+function ActivityFeed({ userId, books, articles }) {
+  const [activity, setActivity] = useState([]);
+
+  useEffect(() => {
+    return onSnapshot(
+      query(collection(db, "users", userId, "activity"), orderBy("createdAt", "desc")),
+      snap => setActivity(snap.docs.map(d => ({ id: d.id, ...d.data() })).slice(0, 40))
+    );
+  }, [userId]);
+
+  if (activity.length === 0) return null;
+
+  const today = new Date();
+  const todayStr = today.toDateString();
+  const yesterdayStr = new Date(today - 86400000).toDateString();
+
+  const getDateLabel = (ts) => {
+    if (!ts?.toDate) return null;
+    const d = ts.toDate();
+    const ds = d.toDateString();
+    if (ds === todayStr) return "Earlier today";
+    if (ds === yesterdayStr) return "Yesterday";
+    return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  };
+
+  // Group by day
+  const groups = [];
+  const seen = {};
+  activity.forEach(entry => {
+    const label = getDateLabel(entry.createdAt);
+    if (!label) return;
+    if (!seen[label]) { seen[label] = true; groups.push({ label, entries: [] }); }
+    groups[groups.length - 1].entries.push(entry);
+  });
+
+  // Summarise each group into concise lines
+  const summarise = (entries) => {
+    const byTitle = {};
+    entries.forEach(e => {
+      const title = e.bookTitle || e.articleTitle || "Unknown";
+      const id = e.bookId || e.articleId;
+      const isArticle = !!e.articleId;
+      if (!byTitle[title]) byTitle[title] = { title, id, isArticle, actions: [] };
+      byTitle[title].actions.push(e.text || e.type || "");
+    });
+
+    // Also group standalone actions
+    const lines = Object.values(byTitle).map(item => {
+      const actions = [...new Set(item.actions)];
+      const actionStr = actions.map(a => {
+        if (a.includes("quote")) return "added a quote";
+        if (a.includes("rumination")) return "added a rumination";
+        if (a.includes("note")) return "added a reading note";
+        if (a.includes("shelf")) return "added to shelf";
+        if (a.includes("tag")) return "added a tag";
+        if (a.includes("currently reading")) return "started reading";
+        if (a.includes("Finished") || a.includes("finished")) return "finished reading";
+        if (a.includes("Logged") || a.includes("logged")) return "logged";
+        return a;
+      }).join(", ");
+      return { title: item.title, id: item.id, isArticle: item.isArticle, actionStr };
+    });
+    return lines;
+  };
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      {groups.map(({ label, entries }) => {
+        const lines = summarise(entries);
+        return (
+          <div key={label} style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 13, color: "#aaa", fontWeight: 500, marginBottom: 8 }}>{label}</div>
+            <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, overflow: "hidden" }}>
+              {lines.map((line, i) => (
+                <div key={i} style={{ padding: "11px 16px", borderBottom: i === lines.length - 1 ? "none" : "0.5px solid #f0f0f0", fontSize: 14, color: "#444", lineHeight: 1.5 }}>
+                  {line.actionStr} <span style={{ fontFamily: line.isArticle ? "inherit" : "Georgia, serif", color: "#1a1a1a" }}>
+                    {line.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
