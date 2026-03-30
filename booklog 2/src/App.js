@@ -140,14 +140,7 @@ export default function App() {
       <Nav username={username} screen={screen} go={go}
         onNew={(type) => { setLogType(type); setEditing(null); go({ type: "log" }); }} onSignOut={signOutUser} />
       {page === "reading" && <Home userId={user.uid} onSelect={(id) => go({ type: "book-detail", id })} onSelectArticle={(id) => go({ type: "article-detail", id })} />}
-      {page === "home" && (
-        <BookList userId={user.uid}
-          onSelect={(id) => go({ type: "book-detail", id })}
-          onSelectArticle={(id) => go({ type: "article-detail", id })}
-          onShelfClick={(filter) => go({ type: "shelf-view", filter, filterType: "shelf" })}
-          onTagClick={(filter) => go({ type: "shelf-view", filter, filterType: "tag" })}
-          onViewProject={(id) => go({ type: "project-detail", id })} />
-      )}
+
       {page === "diary" && <Diary userId={user.uid}
         onSelectBook={(id) => go({ type: "book-detail", id })}
         onSelectArticle={(id) => go({ type: "article-detail", id })} />}
@@ -161,15 +154,16 @@ export default function App() {
         onSelectBook={(id) => go({ type: "book-detail", id })}
         onSelectArticle={(id) => go({ type: "article-detail", id })}
         onNavigate={(type) => go({ type })}
-        onShelfClick={(filter) => go({ type: "shelf-view", filter, filterType: "shelf" })} />}
+        onShelfClick={(filter) => go({ type: "shelf-view", filter, filterType: "shelf" })}
+        onTagClick={(filter) => go({ type: "shelf-view", filter, filterType: "tag" })} />}
     </>
   );
 }
 
 function Nav({ username, screen, go, onNew, onSignOut }) {
   const [showDropdown, setShowDropdown] = useState(false);
-  const tabs = [["reading","Reading"],["home","Dashboard"],["diary","Diary"],["books","Books"],["articles","Articles"],["following","Following"],["projects","Projects"]];
-  const page = ["reading","home","diary","books","articles","following","projects","profile"].includes(screen.type) ? screen.type : "";
+  const tabs = [["reading","Reading"],["diary","Diary"],["books","Books"],["articles","Articles"],["following","Following"],["projects","Projects"]];
+  const page = ["reading","diary","books","articles","following","projects","profile"].includes(screen.type) ? screen.type : "";
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px" }}>
