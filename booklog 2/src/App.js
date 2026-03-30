@@ -177,7 +177,7 @@ function Nav({ username, screen, go, onNew, onSignOut }) {
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ position: "relative" }}>
             <button onClick={() => setShowDropdown(p => !p)}
-              style={{ fontFamily: "Georgia, serif", fontSize: 14, background: "#000", color: "#fff", border: "none", padding: "4px 12px", cursor: "pointer" }}>
+              style={{ fontFamily: "Georgia, serif", fontSize: 14, background: "#e8318a", color: "#fff", border: "none", padding: "4px 12px", cursor: "pointer" }}>
               Log it ▾
             </button>
             {showDropdown && (
