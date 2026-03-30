@@ -34,7 +34,7 @@ function BookFocus({ book, userId, onBack, onViewDetail }) {
 
   const saveQuote = async () => {
     if (!quoteText.trim()) return;
-    const newQuote = { page: quotePage.trim(), text: quoteText.trim(), quoteNote: quoteNote.trim() };
+    const newQuote = { page: quotePage.trim(), text: quoteText.trim(), quoteNote: quoteNote.trim(), savedAt: new Date().toISOString() };
     await updateDoc(doc(db, "users", userId, "books", book.id), {
       quotes: [...(book.quotes || []), newQuote], updatedAt: serverTimestamp()
     });
@@ -45,7 +45,7 @@ function BookFocus({ book, userId, onBack, onViewDetail }) {
 
   const saveNote = async () => {
     if (!noteText.trim()) return;
-    const newNote = { page: notePage.trim(), text: noteText.trim(), type: "note" };
+    const newNote = { page: notePage.trim(), text: noteText.trim(), type: "note", savedAt: new Date().toISOString() };
     await updateDoc(doc(db, "users", userId, "books", book.id), {
       readingNotes: [...(book.readingNotes || []), newNote], updatedAt: serverTimestamp()
     });
