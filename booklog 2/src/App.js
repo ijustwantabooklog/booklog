@@ -165,45 +165,43 @@ function Nav({ username, screen, go, onNew, onSignOut }) {
   const page = ["reading","diary","books","articles","following","projects","profile"].includes(screen.type) ? screen.type : "";
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 32px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0 12px" }}>
-        <span style={{ fontSize: 22, color: "#444" }}>
+    <div style={{ borderBottom: "2px solid #000" }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "8px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontSize: 18, fontWeight: "bold", fontFamily: "Georgia, serif" }}>
           Reading Archive / <span
             onClick={() => go({ type: "profile" })}
-            style={{ cursor: "pointer" }}
-            onMouseEnter={e => e.currentTarget.style.color = "#e8318a"}
-            onMouseLeave={e => e.currentTarget.style.color = "#444"}>
+            style={{ fontWeight: "normal", color: "#00e", textDecoration: "underline", cursor: "pointer" }}>
             {username}
           </span>
-        </span>
-        <div style={{ display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ position: "relative" }}>
             <button onClick={() => setShowDropdown(p => !p)}
-              style={{ background: "#e8318a", color: "#fff", border: "none", borderRadius: 6, padding: "7px 18px", fontSize: 14, cursor: "pointer" }}>
+              style={{ fontFamily: "Georgia, serif", fontSize: 14, background: "#000", color: "#fff", border: "none", padding: "4px 12px", cursor: "pointer" }}>
               Log it ▾
             </button>
             {showDropdown && (
-              <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: "#fff", border: "1px solid #e2e2e2", borderRadius: 8, overflow: "hidden", zIndex: 100, minWidth: 130, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
+              <div style={{ position: "absolute", right: 0, top: "calc(100% + 2px)", background: "#fff", border: "1px solid #000", zIndex: 100, minWidth: 120 }}>
                 <div onClick={() => { onNew("book"); setShowDropdown(false); }}
-                  style={{ padding: "10px 16px", fontSize: 14, cursor: "pointer", color: "#444" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                  onMouseLeave={e => e.currentTarget.style.background = "none"}>Book</div>
+                  style={{ padding: "6px 12px", fontSize: 14, cursor: "pointer", borderBottom: "1px solid #eee" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f0f0f0"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#fff"}>Book</div>
                 <div onClick={() => { onNew("article"); setShowDropdown(false); }}
-                  style={{ padding: "10px 16px", fontSize: 14, cursor: "pointer", color: "#444", borderTop: "0.5px solid #ebebeb" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                  onMouseLeave={e => e.currentTarget.style.background = "none"}>Article</div>
+                  style={{ padding: "6px 12px", fontSize: 14, cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f0f0f0"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#fff"}>Article</div>
               </div>
             )}
           </div>
-          <span onClick={onSignOut} style={{ fontSize: 13, color: "#aaa", cursor: "pointer" }}>sign out</span>
+          <span onClick={onSignOut} style={{ fontFamily: "Arial, sans-serif", fontSize: 12, color: "#00e", textDecoration: "underline", cursor: "pointer" }}>sign out</span>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 24, padding: "0", borderTop: "0.5px solid #f0f0f0", marginTop: 4 }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px", display: "flex", gap: 2 }}>
         {tabs.map(([type, label]) => (
-          <span key={type} onClick={() => go({ type })}
-            style={{ fontSize: 14, color: page === type ? "#1a1a1a" : "#aaa", fontWeight: page === type ? 500 : 400, cursor: "pointer", padding: "10px 0", borderBottom: page === type ? "2px solid #1a1a1a" : "2px solid transparent", marginBottom: -1 }}>
+          <div key={type} onClick={() => go({ type })}
+            style={{ fontFamily: "Arial, sans-serif", fontSize: 13, padding: "5px 14px", border: "1px solid #000", borderBottom: page === type ? "1px solid #fff" : "1px solid #000", marginBottom: page === type ? -1 : 0, cursor: "pointer", background: page === type ? "#fff" : "#f0f0f0", fontWeight: page === type ? "bold" : "normal", color: page === type ? "#000" : "#333", marginTop: 4 }}>
             {label}
-          </span>
+          </div>
         ))}
       </div>
     </div>
