@@ -162,7 +162,7 @@ export default function App() {
 
 function Nav({ username, screen, go, onNew, onSignOut }) {
   const [showDropdown, setShowDropdown] = useState(false);
-  const tabs = [["reading","Reading"],["diary","Diary"],["books","Books"],["articles","Articles"],["following","Following"],["projects","Projects"]];
+  const tabs = [["reading","Current"],["diary","Diary"],["books","Books"],["articles","Articles"],["following","Following"],["projects","Projects"]];
   const page = ["reading","diary","books","articles","following","projects","profile"].includes(screen.type) ? screen.type : "";
 
   return (
