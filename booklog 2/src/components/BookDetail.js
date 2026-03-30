@@ -94,7 +94,7 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
-        {["log", "ruminations"].map(t => (
+        {["log", "annotations", "ruminations"].map(t => (
           <span key={t} onClick={() => setTab(t)}
             style={{ fontSize: 15, color: tab === t ? "#1a1a1a" : "#aaa", fontWeight: tab === t ? 500 : 400, cursor: "pointer", textTransform: "capitalize" }}>
             {t}
@@ -176,6 +176,30 @@ export default function BookDetail({ bookId, userId, onBack, onEdit }) {
         </div>
       )}
       </>}
+
+      {tab === "annotations" && (() => {
+        const quotes = (book.quotes || []).map(q => ({ ...q, _type: "quote" }));
+        const notes = (book.readingNotes || []).map(n => ({ ...n, _type: "note" }));
+        const all = [...quotes, ...notes].sort((a, b) => {
+          const pa = parseInt(a.page) || 0;
+          const pb = parseInt(b.page) || 0;
+          return pa - pb;
+        });
+        return (
+          <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, overflow: "hidden" }}>
+            {all.length === 0 && <div style={{ padding: "16px", fontSize: 14, color: "#aaa" }}>No quotes or reading notes yet.</div>}
+            {all.map((item, i) => (
+              <div key={i} style={{ padding: "12px 20px", borderBottom: i === all.length - 1 ? "none" : "0.5px solid #f0f0f0" }}>
+                <div style={{ display: "flex", gap: 16, alignItems: "baseline" }}>
+                  <span style={{ fontSize: 13, color: "#e8318a", minWidth: 36, flexShrink: 0 }}>{item.page || "—"}</span>
+                  <span style={{ fontSize: 14, color: item._type === "note" ? "#0000ee" : "#333", lineHeight: 1.6, flex: 1 }}>{item.text}</span>
+                </div>
+                {item.quoteNote && <div style={{ marginLeft: 52, marginTop: 4, fontSize: 13, color: "#888", fontStyle: "italic" }}>{item.quoteNote}</div>}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {tab === "ruminations" && (
         <div>
