@@ -2,13 +2,13 @@ import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { doc, onSnapshot, updateDoc, collection, query, orderBy, setDoc, deleteDoc, getDoc } from "firebase/firestore";
 
-function formatActivityDate(ts) {
+function formatDate(ts) {
   if (!ts) return "";
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function Profile({ userId, username, currentUserId, onBack, onSelectBook, onSelectArticle, onNavigate, onShelfClick }) {
+export default function Profile({ userId, username, currentUserId, onBack, onSelectBook, onSelectArticle, onNavigate, onShelfClick, onTagClick }) {
   const isOwnProfile = userId === currentUserId;
 
   const [profile, setProfile] = useState({ bio: "" });
@@ -16,26 +16,22 @@ export default function Profile({ userId, username, currentUserId, onBack, onSel
   const [articles, setArticles] = useState([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersList, setFollowersList] = useState([]);
-  const [followingList, setFollowingList] = useState([]);
   const [showFollowers, setShowFollowers] = useState(false);
   const [editingBio, setEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState("");
   const [allActivity, setAllActivity] = useState([]);
+  const [followingActivity, setFollowingActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let booksLoaded = false, articlesLoaded = false;
+    let b = false, a = false;
     const unsub1 = onSnapshot(doc(db, "users", userId, "profile", "info"), d => {
       if (d.exists()) setProfile(d.data());
     });
-    const unsub2 = onSnapshot(
-      query(collection(db, "users", userId, "books"), orderBy("createdAt", "desc")),
-      snap => { setBooks(snap.docs.map(d => ({ id: d.id, ...d.data() }))); booksLoaded = true; if (articlesLoaded) setLoading(false); }
-    );
-    const unsub3 = onSnapshot(
-      query(collection(db, "users", userId, "articles"), orderBy("createdAt", "desc")),
-      snap => { setArticles(snap.docs.map(d => ({ id: d.id, ...d.data() }))); articlesLoaded = true; if (booksLoaded) setLoading(false); }
-    );
+    const unsub2 = onSnapshot(query(collection(db, "users", userId, "books"), orderBy("createdAt", "desc")),
+      snap => { setBooks(snap.docs.map(d => ({ id: d.id, ...d.data() }))); b = true; if (a) setLoading(false); });
+    const unsub3 = onSnapshot(query(collection(db, "users", userId, "articles"), orderBy("createdAt", "desc")),
+      snap => { setArticles(snap.docs.map(d => ({ id: d.id, ...d.data() }))); a = true; if (b) setLoading(false); });
     const unsub4 = onSnapshot(collection(db, "users", userId, "followers"), async snap => {
       setIsFollowing(snap.docs.some(d => d.id === currentUserId));
       const names = await Promise.all(snap.docs.map(async d => {
@@ -44,19 +40,36 @@ export default function Profile({ userId, username, currentUserId, onBack, onSel
       }));
       setFollowersList(names);
     });
-    const unsub5 = onSnapshot(collection(db, "users", userId, "following"), async snap => {
-      const list = await Promise.all(snap.docs.map(async d => {
-        const p = await getDoc(doc(db, "users", d.id, "profile", "info"));
-        return { id: d.id, username: p.exists() ? p.data().username || d.id : d.id };
-      }));
-      setFollowingList(list);
-    });
-    const unsub6 = onSnapshot(
-      query(collection(db, "users", userId, "activity"), orderBy("createdAt", "desc")),
-      snap => setAllActivity(snap.docs.map(d => ({ id: d.id, ...d.data() })).slice(0, 15))
-    );
+    const unsub5 = onSnapshot(query(collection(db, "users", userId, "activity"), orderBy("createdAt", "desc")),
+      snap => setAllActivity(snap.docs.map(d => ({ id: d.id, ...d.data() })).slice(0, 15)));
+
+    // Load following activity (only on own profile)
+    let unsub6 = () => {};
+    if (isOwnProfile) {
+      unsub6 = onSnapshot(collection(db, "users", userId, "following"), async snap => {
+        const followingIds = snap.docs.map(d => d.id);
+        if (followingIds.length === 0) { setFollowingActivity([]); return; }
+        const allAct = [];
+        await Promise.all(followingIds.map(async fid => {
+          const profileDoc = await getDoc(doc(db, "users", fid, "profile", "info"));
+          const uname = profileDoc.exists() ? profileDoc.data().username : fid;
+          const actSnap = await new Promise(resolve => {
+            const q = query(collection(db, "users", fid, "activity"), orderBy("createdAt", "desc"));
+            const unsub = onSnapshot(q, s => { resolve(s); unsub(); });
+          });
+          actSnap.docs.slice(0, 5).forEach(d => allAct.push({ ...d.data(), username: uname }));
+        }));
+        allAct.sort((a, b) => {
+          const ta = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+          const tb = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+          return tb - ta;
+        });
+        setFollowingActivity(allAct.slice(0, 15));
+      });
+    }
+
     return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); };
-  }, [userId, currentUserId]);
+  }, [userId, currentUserId, isOwnProfile]);
 
   const saveBio = async () => {
     await updateDoc(doc(db, "users", userId, "profile", "info"), { bio: bioInput.trim() });
@@ -76,6 +89,7 @@ export default function Profile({ userId, username, currentUserId, onBack, onSel
   const thisYear = new Date().getFullYear();
   const currentlyReading = books.filter(b => b.currentlyReading);
   const shelves = [...new Set(books.flatMap(b => b.shelves || []).filter(Boolean))].sort();
+  const tags = [...new Set(books.flatMap(b => b.tags || []).filter(Boolean))].sort();
 
   const recentlyLogged = [...books.filter(b => !b.currentlyReading).map(b => ({ ...b, _type: "book" })),
     ...articles.map(a => ({ ...a, _type: "article" }))]
@@ -101,7 +115,7 @@ export default function Profile({ userId, username, currentUserId, onBack, onSel
       <div style={{ ...cardStyle, padding: "24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 24, color: "#444", marginBottom: 8 }}>{username}</div>
+            <div style={{ fontSize: 22, color: "#444", marginBottom: 8 }}>{username}</div>
             {isOwnProfile ? (
               editingBio ? (
                 <div>
@@ -129,54 +143,31 @@ export default function Profile({ userId, username, currentUserId, onBack, onSel
             </button>
           )}
         </div>
-
-        {/* Stats */}
-        <div style={{ borderTop: "0.5px solid #f0f0f0", marginTop: 16, paddingTop: 14, display: "flex", gap: 20 }}>
-          <span onClick={() => isOwnProfile && onNavigate?.("books")}
-            style={{ fontSize: 13, color: "#888", cursor: isOwnProfile ? "pointer" : "default" }}
-            onMouseEnter={e => { if (isOwnProfile) e.currentTarget.style.color = "#e8318a"; }}
-            onMouseLeave={e => e.currentTarget.style.color = "#888"}>
-            <strong style={{ fontSize: 14, color: "#444", fontWeight: 500, marginRight: 3 }}>{books.length}</strong>books
-          </span>
-          <span onClick={() => isOwnProfile && onNavigate?.("articles")}
-            style={{ fontSize: 13, color: "#888", cursor: isOwnProfile ? "pointer" : "default" }}
-            onMouseEnter={e => { if (isOwnProfile) e.currentTarget.style.color = "#e8318a"; }}
-            onMouseLeave={e => e.currentTarget.style.color = "#888"}>
-            <strong style={{ fontSize: 14, color: "#444", fontWeight: 500, marginRight: 3 }}>{articles.length}</strong>articles
-          </span>
-          {isOwnProfile && (
-            <span style={{ fontSize: 13, color: "#888" }}>
-              <strong style={{ fontSize: 14, color: "#444", fontWeight: 500, marginRight: 3 }}>
-                {books.filter(b => { const d = new Date(b.dateRead); return !isNaN(d) && d.getFullYear() === thisYear; }).length +
-                 articles.filter(a => { const d = new Date(a.dateRead); return !isNaN(d) && d.getFullYear() === thisYear; }).length}
-              </strong>logged in {thisYear}
+        {followersList.length > 0 && (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: "0.5px solid #f0f0f0" }}>
+            <span onClick={() => setShowFollowers(p => !p)}
+              style={{ fontSize: 13, color: "#0000ee", textDecoration: "underline", cursor: "pointer" }}>
+              {followersList.length} {followersList.length === 1 ? "follower" : "followers"}
             </span>
-          )}
-        </div>
-      </div>
-
-      {/* Followers card */}
-      {followersList.length > 0 && (
-        <div style={cardStyle}>
-          <div style={{ ...sectionHeading, cursor: "pointer" }} onClick={() => setShowFollowers(p => !p)}>
-            Followers <span style={{ fontSize: 13, color: "#aaa", fontWeight: 400 }}>{followersList.length}</span>
+            {showFollowers && (
+              <div style={{ marginTop: 8, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                {followersList.map((u, i) => <span key={i} style={{ fontSize: 13, color: "#555" }}>{u}</span>)}
+              </div>
+            )}
           </div>
-          {showFollowers && followersList.map((u, i) => (
-            <div key={i} style={{ padding: "10px 16px", borderBottom: i === followersList.length - 1 ? "none" : "0.5px solid #ebebeb", fontSize: 14, color: "#444" }}>{u}</div>
-          ))}
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Two column layout */}
       <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-        {/* Left column */}
+
+        {/* Left column — main content */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {currentlyReading.length > 0 && (
             <div style={cardStyle}>
               <div style={sectionHeading}>Currently Reading</div>
               {currentlyReading.map((book, i) => (
-                <div key={book.id}
-                  onClick={() => isOwnProfile && onSelectBook?.(book.id)}
+                <div key={book.id} onClick={() => isOwnProfile && onSelectBook?.(book.id)}
                   style={{ display: "flex", gap: 12, padding: "12px 16px", borderBottom: i === currentlyReading.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: isOwnProfile ? "pointer" : "default" }}
                   onMouseEnter={e => { if (isOwnProfile) e.currentTarget.style.background = "#fafafa"; }}
                   onMouseLeave={e => e.currentTarget.style.background = "none"}>
@@ -220,32 +211,16 @@ export default function Profile({ userId, username, currentUserId, onBack, onSel
             </div>
           )}
 
-          {isOwnProfile && shelves.length > 0 && (
+          {allActivity.length > 0 && (
             <div style={cardStyle}>
-              <div style={sectionHeading}>Shelves</div>
-              {shelves.map((shelf, i) => (
-                <div key={shelf} onClick={() => onShelfClick?.(shelf)}
-                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: i === shelves.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                  onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                  <span style={{ fontSize: 14, color: "#0000ee", textDecoration: "underline" }}>{shelf}</span>
-                  <span style={{ fontSize: 12, color: "#aaa" }}>{books.filter(b => (b.shelves || []).includes(shelf)).length}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Right column - Activity */}
-        {allActivity.length > 0 && (
-          <div style={{ width: 280, flexShrink: 0 }}>
-            <div style={cardStyle}>
-              <div style={sectionHeading}>Recent Activity</div>
+              <div style={{ ...sectionHeading, display: "flex", gap: 0 }}>
+                <span style={{ marginRight: 16 }}>Recent Activity</span>
+              </div>
               {allActivity.map((entry, i) => {
                 const title = entry.bookTitle || entry.articleTitle || "";
                 const id = entry.bookId || entry.articleId;
                 const isArticle = !!entry.articleId;
-                const date = entry.createdAt?.toDate ? formatActivityDate(entry.createdAt) : "";
+                const date = entry.createdAt?.toDate ? formatDate(entry.createdAt) : "";
                 return (
                   <div key={entry.id}
                     onClick={() => { if (isOwnProfile && id) isArticle ? onSelectArticle?.(id) : onSelectBook?.(id); }}
@@ -257,8 +232,85 @@ export default function Profile({ userId, username, currentUserId, onBack, onSel
                 );
               })}
             </div>
+          )}
+
+          {isOwnProfile && followingActivity.length > 0 && (
+            <div style={cardStyle}>
+              <div style={sectionHeading}>Following Activity</div>
+              {followingActivity.map((entry, i) => {
+                const title = entry.bookTitle || entry.articleTitle || "";
+                const date = entry.createdAt?.toDate ? formatDate(entry.createdAt) : "";
+                return (
+                  <div key={i} style={{ padding: "10px 16px", borderBottom: i === followingActivity.length - 1 ? "none" : "0.5px solid #ebebeb", fontSize: 13, color: "#444", lineHeight: 1.5 }}>
+                    <strong style={{ color: "#333", fontWeight: 500 }}>{entry.username}</strong> {entry.text} <strong style={{ color: "#333", fontWeight: 500 }}>{title}</strong>{date ? <span style={{ color: "#bbb" }}> · {date}</span> : ""}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Right sidebar */}
+        <div style={{ width: 190, flexShrink: 0 }}>
+          {/* Stats */}
+          <div style={cardStyle}>
+            <div style={sectionHeading}>Stats</div>
+            <div style={{ padding: "10px 16px", borderBottom: "0.5px solid #ebebeb" }}>
+              <div style={{ fontSize: 12, color: "#aaa", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>Books</div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 13, color: "#444" }}>Total</span>
+                <span style={{ fontSize: 13, color: "#888" }}>{books.length}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                <span style={{ fontSize: 13, color: "#444" }}>{thisYear}</span>
+                <span style={{ fontSize: 13, color: "#888" }}>{books.filter(b => { const d = new Date(b.dateRead); return !isNaN(d) && d.getFullYear() === thisYear; }).length}</span>
+              </div>
+            </div>
+            <div style={{ padding: "10px 16px" }}>
+              <div style={{ fontSize: 12, color: "#aaa", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>Articles</div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 13, color: "#444" }}>Total</span>
+                <span style={{ fontSize: 13, color: "#888" }}>{articles.length}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                <span style={{ fontSize: 13, color: "#444" }}>{thisYear}</span>
+                <span style={{ fontSize: 13, color: "#888" }}>{articles.filter(a => { const d = new Date(a.dateRead); return !isNaN(d) && d.getFullYear() === thisYear; }).length}</span>
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* Shelves */}
+          {shelves.length > 0 && (
+            <div style={cardStyle}>
+              <div style={sectionHeading}>Shelves</div>
+              {shelves.map((shelf, i) => (
+                <div key={shelf} onClick={() => isOwnProfile && onShelfClick?.(shelf)}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: i === shelves.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: isOwnProfile ? "pointer" : "default" }}
+                  onMouseEnter={e => { if (isOwnProfile) e.currentTarget.style.background = "#fafafa"; }}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                  <span style={{ fontSize: 14, color: isOwnProfile ? "#0000ee" : "#444", textDecoration: isOwnProfile ? "underline" : "none" }}>{shelf}</span>
+                  <span style={{ fontSize: 12, color: "#aaa" }}>{books.filter(b => (b.shelves || []).includes(shelf)).length}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Tags */}
+          {tags.length > 0 && (
+            <div style={cardStyle}>
+              <div style={sectionHeading}>Tags</div>
+              {tags.map((tag, i) => (
+                <div key={tag} onClick={() => isOwnProfile && onTagClick?.(tag)}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: i === tags.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: isOwnProfile ? "pointer" : "default" }}
+                  onMouseEnter={e => { if (isOwnProfile) e.currentTarget.style.background = "#fafafa"; }}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                  <span style={{ fontSize: 14, color: isOwnProfile ? "#0000ee" : "#444", textDecoration: isOwnProfile ? "underline" : "none" }}>#{tag}</span>
+                  <span style={{ fontSize: 12, color: "#aaa" }}>{books.filter(b => (b.tags || []).includes(tag)).length}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
