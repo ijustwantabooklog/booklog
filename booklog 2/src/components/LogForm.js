@@ -134,7 +134,7 @@ export default function LogForm({ book, userId, onCancel, onSave }) {
       update("quotes", updated);
       setEditingQuoteIndex(null);
     } else {
-      update("quotes", [...form.quotes, { page: newQuotePage, text: newQuoteText.trim(), quoteNote: newQuoteNote.trim() }]);
+      update("quotes", [...form.quotes, { page: newQuotePage, text: newQuoteText.trim(), quoteNote: newQuoteNote.trim(), savedAt: new Date().toISOString() }]);
     }
     setNewQuotePage(""); setNewQuoteText(""); setNewQuoteNote("");
     setShowQuoteInput(true); // auto-reopen for next quote
