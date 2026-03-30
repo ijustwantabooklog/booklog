@@ -283,7 +283,30 @@ function ActivityFeed({ userId, books, articles }) {
     );
   }, [userId]);
 
-  if (activity.length === 0) return null;
+  const recentBooks = books.filter(b => !b.currentlyReading).slice(0, 4);
+  const recentArticles = articles.slice(0, 3);
+
+  if (activity.length === 0) {
+    // Fallback — show recent books/articles
+    if (recentBooks.length === 0 && recentArticles.length === 0) return null;
+    return (
+      <div style={{ marginTop: 10 }}>
+        {recentBooks.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 13, color: "#aaa", fontWeight: 500, marginBottom: 8 }}>Recently read</div>
+            <div style={{ background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, overflow: "hidden" }}>
+              {recentBooks.map((book, i) => (
+                <div key={book.id} style={{ padding: "11px 16px", borderBottom: i === recentBooks.length - 1 ? "none" : "0.5px solid #f0f0f0", fontSize: 14 }}>
+                  <span style={{ fontFamily: "Georgia, serif", color: "#1a1a1a" }}>{book.title}</span>
+                  {book.author && <span style={{ color: "#aaa", fontSize: 13 }}> · {book.author}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   const today = new Date();
   const todayStr = today.toDateString();
