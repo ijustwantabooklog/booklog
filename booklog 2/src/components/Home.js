@@ -78,7 +78,7 @@ function BookFocus({ book, userId, onBack, onViewDetail }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "#f4f4f4", zIndex: 1000, overflowY: "auto" }}>
-      <div style={{ maxWidth: 620, margin: "0 auto", padding: "0 20px 60px" }}>
+      <div style={{ maxWidth: 620, margin: "0 auto", padding: "24px 32px 60px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0 20px" }}>
           <div style={{ display: "flex", gap: 16 }}>
             <button onClick={markAsRead} style={{ ...ghostBtn, color: "#aaa" }}>mark as read</button>
@@ -253,7 +253,7 @@ export default function Home({ userId, onSelect }) {
   };
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px 60px" }}>
+    <div style={{ maxWidth: 860, margin: "0 auto", padding: "24px 32px 60px" }}>
       {loading && <p style={{ color: "#aaa", fontSize: 15, padding: "20px 0" }}>loading...</p>}
 
       {!loading && currentlyReading.length === 0 && (
@@ -263,25 +263,23 @@ export default function Home({ userId, onSelect }) {
       )}
 
       {currentlyReading.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 15, color: "#444", fontWeight: 500, marginBottom: 10 }}>Currently Reading</div>
-          <div style={cardStyle}>
-            {currentlyReading.map((book, i) => (
-              <div key={book.id} onClick={() => setFocusedBook(book)}
-                style={{ display: "flex", gap: 16, alignItems: "center", padding: "16px 20px", borderBottom: i === currentlyReading.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                {book.coverUrl
-                  ? <img src={book.coverUrl} alt={book.title} style={{ width: 48, height: 68, objectFit: "cover", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0 }} />
-                  : <div style={{ width: 48, height: 68, background: "#e8e8e8", border: "1px solid #ddd", borderRadius: 2, flexShrink: 0 }} />}
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: "Georgia, serif", fontSize: 16, color: "#1a1a1a", marginBottom: 3 }}>{book.title}</div>
-                  <div style={{ fontSize: 13, color: "#888" }}>{book.author}</div>
-                </div>
-                <span style={{ fontSize: 16, color: "#ddd" }}>→</span>
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 11, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 8 }}>Currently Reading</div>
+          {currentlyReading.map((book, i) => (
+            <div key={book.id} onClick={() => setFocusedBook(book)}
+              style={{ display: "flex", gap: 12, alignItems: "center", padding: "10px 0", borderBottom: "0.5px solid #f0f0f0", cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+              {book.coverUrl
+                ? <img src={book.coverUrl} alt={book.title} style={{ width: 36, height: 52, objectFit: "cover", border: "0.5px solid #e0e0e0", borderRadius: 2, flexShrink: 0 }} />
+                : <div style={{ width: 36, height: 52, background: "#e8e8e8", border: "0.5px solid #e0e0e0", borderRadius: 2, flexShrink: 0 }} />}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: "Georgia, serif", fontSize: 15, color: "#1a1a1a", marginBottom: 2 }}>{book.title}</div>
+                <div style={{ fontSize: 12, color: "#888" }}>{book.author}</div>
               </div>
-            ))}
-          </div>
+              <span style={{ fontSize: 13, color: "#ccc" }}>→</span>
+            </div>
+          ))}
         </div>
       )}
 
@@ -291,35 +289,31 @@ export default function Home({ userId, onSelect }) {
         if (lines.length === 0) return null;
         return (
           <div key={label} style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 13, color: "#aaa", fontWeight: 500, marginBottom: 8 }}>{label}</div>
-            <div style={cardStyle}>
-              {lines.map((line, i) => (
-                <div key={i} onClick={() => line.id && onSelect(line.id)}
-                  style={{ padding: "11px 16px", borderBottom: i === lines.length - 1 ? "none" : "0.5px solid #f0f0f0", fontSize: 14, color: "#444", lineHeight: 1.5, cursor: line.id ? "pointer" : "default" }}
-                  onMouseEnter={e => { if (line.id) e.currentTarget.style.background = "#fafafa"; }}
-                  onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                  {line.actionStr} <span style={{ fontFamily: "Georgia, serif", color: "#1a1a1a" }}>{line.title}</span>
-                </div>
-              ))}
-            </div>
+            <div style={{ fontSize: 11, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 6 }}>{label}</div>
+            {lines.map((line, i) => (
+              <div key={i} onClick={() => line.id && onSelect(line.id)}
+                style={{ padding: "7px 0", borderBottom: "0.5px solid #f0f0f0", fontSize: 14, color: "#666", lineHeight: 1.5, cursor: line.id ? "pointer" : "default" }}
+                onMouseEnter={e => { if (line.id) e.currentTarget.style.color = "#1a1a1a"; }}
+                onMouseLeave={e => e.currentTarget.style.color = "#666"}>
+                {line.actionStr} <span style={{ fontFamily: "Georgia, serif", color: "#1a1a1a" }}>{line.title}</span>
+              </div>
+            ))}
           </div>
         );
       })}
 
       {!loading && groups.length === 0 && books.filter(b => !b.currentlyReading).slice(0, 4).length > 0 && (
         <div>
-          <div style={{ fontSize: 13, color: "#aaa", fontWeight: 500, marginBottom: 8 }}>Recently read</div>
-          <div style={cardStyle}>
-            {books.filter(b => !b.currentlyReading).slice(0, 4).map((book, i, arr) => (
-              <div key={book.id} onClick={() => onSelect(book.id)}
-                style={{ padding: "11px 16px", borderBottom: i === arr.length - 1 ? "none" : "0.5px solid #f0f0f0", fontSize: 14, cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                <span style={{ fontFamily: "Georgia, serif", color: "#1a1a1a" }}>{book.title}</span>
-                {book.author && <span style={{ color: "#aaa", fontSize: 13 }}> · {book.author}</span>}
-              </div>
-            ))}
-          </div>
+          <div style={{ fontSize: 11, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 6 }}>Recently read</div>
+          {books.filter(b => !b.currentlyReading).slice(0, 4).map((book, i) => (
+            <div key={book.id} onClick={() => onSelect(book.id)}
+              style={{ padding: "7px 0", borderBottom: "0.5px solid #f0f0f0", fontSize: 14, cursor: "pointer", color: "#666" }}
+              onMouseEnter={e => e.currentTarget.style.color = "#1a1a1a"}
+              onMouseLeave={e => e.currentTarget.style.color = "#666"}>
+              <span style={{ fontFamily: "Georgia, serif", color: "#1a1a1a" }}>{book.title}</span>
+              {book.author && <span style={{ color: "#aaa", fontSize: 13 }}> · {book.author}</span>}
+            </div>
+          ))}
         </div>
       )}
     </div>
