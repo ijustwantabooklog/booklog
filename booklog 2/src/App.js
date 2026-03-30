@@ -3,6 +3,7 @@ import { auth, provider, db } from "./firebase";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import BookList from "./components/BookList";
+import Home from "./components/Home";
 import BookDetail from "./components/BookDetail";
 import LogForm from "./components/LogForm";
 import ArticleLogForm from "./components/ArticleLogForm";
@@ -25,7 +26,7 @@ export default function App() {
   const [loadingUsername, setLoadingUsername] = useState(false);
 
   // Single source of truth for navigation
-  const [screen, setScreen] = useState({ type: "home" });
+  const [screen, setScreen] = useState({ type: "reading" });
   const [logType, setLogType] = useState("book");
   const [editing, setEditing] = useState(null);
 
@@ -138,6 +139,7 @@ export default function App() {
     <>
       <Nav username={username} screen={screen} go={go}
         onNew={(type) => { setLogType(type); setEditing(null); go({ type: "log" }); }} onSignOut={signOutUser} />
+      {page === "reading" && <Home userId={user.uid} onSelect={(id) => go({ type: "book-detail", id })} onSelectArticle={(id) => go({ type: "article-detail", id })} />}
       {page === "home" && (
         <BookList userId={user.uid}
           onSelect={(id) => go({ type: "book-detail", id })}
@@ -166,8 +168,8 @@ export default function App() {
 
 function Nav({ username, screen, go, onNew, onSignOut }) {
   const [showDropdown, setShowDropdown] = useState(false);
-  const tabs = [["home","Home"],["diary","Diary"],["books","Books"],["articles","Articles"],["following","Following"],["projects","Projects"]];
-  const page = ["home","diary","books","articles","following","projects","profile"].includes(screen.type) ? screen.type : "";
+  const tabs = [["reading","Reading"],["home","Dashboard"],["diary","Diary"],["books","Books"],["articles","Articles"],["following","Following"],["projects","Projects"]];
+  const page = ["reading","home","diary","books","articles","following","projects","profile"].includes(screen.type) ? screen.type : "";
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px" }}>
