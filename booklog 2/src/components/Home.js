@@ -19,6 +19,9 @@ function BookFocus({ book, userId, onBack, onViewDetail }) {
   const [ruminations, setRuminations] = useState([]);
   const [savedQuote, setSavedQuote] = useState(false);
   const [savedRum, setSavedRum] = useState(false);
+  const [noteText, setNoteText] = useState("");
+  const [notePage, setNotePage] = useState("");
+  const [savedNote, setSavedNote] = useState(false);
   const quoteRef = useRef(null);
   const rumRef = useRef(null);
 
@@ -38,6 +41,17 @@ function BookFocus({ book, userId, onBack, onViewDetail }) {
     setQuoteText(""); setQuotePage(""); setQuoteNote(""); setShowQuoteNote(false);
     setSavedQuote(true);
     setTimeout(() => setSavedQuote(false), 2000);
+  };
+
+  const saveNote = async () => {
+    if (!noteText.trim()) return;
+    const newNote = { page: notePage.trim(), text: noteText.trim(), type: "note" };
+    await updateDoc(doc(db, "users", userId, "books", book.id), {
+      readingNotes: [...(book.readingNotes || []), newNote], updatedAt: serverTimestamp()
+    });
+    setNoteText(""); setNotePage("");
+    setSavedNote(true);
+    setTimeout(() => setSavedNote(false), 2000);
   };
 
   const saveRumination = async () => {
@@ -127,6 +141,38 @@ function BookFocus({ book, userId, onBack, onViewDetail }) {
                   <span style={{ fontSize: 13, color: "#444", lineHeight: 1.5 }}>{q.text}</span>
                 </div>
                 {q.quoteNote && <div style={{ fontSize: 12, color: "#888", fontStyle: "italic", marginTop: 4, marginLeft: q.page ? 24 : 0 }}>{q.quoteNote}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Reading notes */}
+      <div style={cardStyle}>
+        <div style={{ padding: "16px 20px" }}>
+          <div style={{ fontSize: 13, color: "#aaa", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>Reading Note</div>
+          <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
+            <input value={notePage} onChange={e => setNotePage(e.target.value)}
+              placeholder="pg"
+              style={{ width: 44, fontSize: 14, border: "none", outline: "none", background: "none", color: "#e8318a", flexShrink: 0 }} />
+            <textarea value={noteText} onChange={e => setNoteText(e.target.value)} rows={3}
+              placeholder="A note, thought, or observation..."
+              style={{ flex: 1, fontSize: 14, border: "none", outline: "none", background: "none", resize: "none", fontFamily: "inherit", lineHeight: 1.6 }}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveNote(); } }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, marginTop: 8 }}>
+            {savedNote && <span style={{ fontSize: 12, color: "#e8318a" }}>saved!</span>}
+            <button onClick={saveNote} style={{ background: "#e8318a", color: "#fff", border: "none", borderRadius: 6, padding: "6px 16px", fontSize: 13, cursor: "pointer" }}>Save note</button>
+          </div>
+        </div>
+        {(book.readingNotes || []).length > 0 && (
+          <div style={{ borderTop: "1px solid #f0f0f0" }}>
+            {[...(book.readingNotes || [])].slice(-3).reverse().map((n, i, arr) => (
+              <div key={i} style={{ padding: "10px 20px", borderBottom: i === arr.length - 1 ? "none" : "0.5px solid #f5f5f5", background: "#f9f9f9" }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "baseline" }}>
+                  {n.page && <span style={{ fontSize: 12, color: "#e8318a", flexShrink: 0 }}>{n.page}</span>}
+                  <span style={{ fontSize: 13, color: "#0000ee", lineHeight: 1.5 }}>{n.text}</span>
+                </div>
               </div>
             ))}
           </div>
