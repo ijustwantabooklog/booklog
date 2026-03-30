@@ -15,3 +15,5 @@ button { cursor: pointer; }
 
 
 input::placeholder, textarea::placeholder { color: #d0d0d0 !important; }
+
+body { background: #fff !important; }
