@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { logActivity } from "../activityLogger";
 
 function StarDisplay({ value, size = 13 }) {
   return (
@@ -38,6 +39,7 @@ function BookFocus({ book, userId, onBack, onViewDetail }) {
     await updateDoc(doc(db, "users", userId, "books", book.id), {
       quotes: [...(book.quotes || []), newQuote], updatedAt: serverTimestamp()
     });
+    await logActivity(userId, "quote", { text: "Added a quote to", bookTitle: book.title, bookId: book.id });
     setQuoteText(""); setQuotePage(""); setQuoteNote(""); setShowQuoteNote(false);
     setSavedQuote(true);
     setTimeout(() => setSavedQuote(false), 2000);
@@ -49,6 +51,7 @@ function BookFocus({ book, userId, onBack, onViewDetail }) {
     await updateDoc(doc(db, "users", userId, "books", book.id), {
       readingNotes: [...(book.readingNotes || []), newNote], updatedAt: serverTimestamp()
     });
+    await logActivity(userId, "note", { text: "Added a reading note to", bookTitle: book.title, bookId: book.id });
     setNoteText(""); setNotePage("");
     setSavedNote(true);
     setTimeout(() => setSavedNote(false), 2000);
@@ -59,6 +62,7 @@ function BookFocus({ book, userId, onBack, onViewDetail }) {
     await addDoc(collection(db, "users", userId, "books", book.id, "ruminations"), {
       text: rumText.trim(), createdAt: serverTimestamp(),
     });
+    await logActivity(userId, "rumination", { text: "Added a rumination to", bookTitle: book.title, bookId: book.id });
     setRumText("");
     setSavedRum(true);
     setTimeout(() => setSavedRum(false), 2000);
