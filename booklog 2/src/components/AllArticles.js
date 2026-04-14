@@ -9,65 +9,58 @@ export default function AllArticles({ userId, onSelect }) {
   const [sort, setSort] = useState("date");
 
   useEffect(() => {
-    const q = query(collection(db, "users", userId, "articles"), orderBy("createdAt", "desc"));
-    return onSnapshot(q, (snap) => {
+    return onSnapshot(query(collection(db, "users", userId, "articles"), orderBy("createdAt", "desc")), snap => {
       setArticles(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
   }, [userId]);
 
-  const sorted = [...articles].sort((a, b) => {
-    if (sort === "alpha") return (a.title || "").localeCompare(b.title || "");
-    return 0;
-  });
-
+  const sorted = [...articles].sort((a, b) =>
+    sort === "alpha" ? (a.title || "").localeCompare(b.title || "") : 0
+  );
   const filtered = sorted.filter(a =>
     a.title?.toLowerCase().includes(search.toLowerCase()) ||
     a.author?.toLowerCase().includes(search.toLowerCase()) ||
     a.publication?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const cardStyle = { background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, overflow: "hidden" };
-
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px 60px" }}>
-      <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "16px" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Search by title, author or publication..."
-          style={{ flex: 1, padding: "10px 14px", fontSize: 14, border: "1px solid #e2e2e2", borderRadius: 10, background: "#fff", outline: "none" }} />
-        <div style={{ display: "flex", background: "#fff", border: "1px solid #e2e2e2", borderRadius: 10, overflow: "hidden", flexShrink: 0 }}>
-          {[["date", "Date added"], ["alpha", "A–Z"]].map(([val, label]) => (
-            <button key={val} onClick={() => setSort(val)} style={{
-              padding: "10px 16px", fontSize: 13, border: "none", cursor: "pointer",
-              background: sort === val ? "#e8318a" : "none",
-              color: sort === val ? "#fff" : "#888",
-              borderRight: val === "date" ? "1px solid #e2e2e2" : "none",
-            }}>{label}</button>
+          style={{ flex: 1 }} />
+        <div>
+          {[["date","Date added"],["alpha","A–Z"]].map(([val, label]) => (
+            <button key={val} onClick={() => setSort(val)}
+              style={{ padding: "4px 12px", fontSize: 13, border: "1px solid #999", borderRight: val === "alpha" ? "1px solid #999" : "none", background: sort === val ? "#e8318a" : "#f0f0f0", color: sort === val ? "#fff" : "#333", cursor: "pointer", fontFamily: "Arial, sans-serif" }}>
+              {label}
+            </button>
           ))}
         </div>
       </div>
 
-      {loading && <p style={{ color: "#aaa", fontSize: 15, padding: "20px 0" }}>loading...</p>}
-      {!loading && filtered.length === 0 && <p style={{ color: "#aaa", fontSize: 15, padding: "20px 0" }}>no articles logged yet</p>}
+      {loading && <p style={{ color: "#666", fontStyle: "italic" }}>loading...</p>}
+      {!loading && filtered.length === 0 && <p style={{ color: "#666", fontStyle: "italic" }}>no articles logged yet</p>}
 
       {!loading && filtered.length > 0 && (
-        <div style={cardStyle}>
-          {filtered.map((article, i) => (
-            <div key={article.id} onClick={() => onSelect(article.id)}
-              style={{ padding: "12px 16px", borderBottom: i === filtered.length - 1 ? "none" : "0.5px solid #ebebeb", cursor: "pointer" }}
-              onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-              onMouseLeave={e => e.currentTarget.style.background = "none"}>
-              <div style={{ fontSize: 15, color: "#0000ee", textDecoration: "underline", marginBottom: 3, fontFamily: "Georgia, serif" }}>{article.title}</div>
-              <div style={{ fontSize: 13, color: "#444" }}>
-                {article.author}{article.publication ? ` · ${article.publication}` : ""}
-                {article.datePublished ? ` · ${article.datePublished}` : ""}
-              </div>
-              {article.url && (
-                <div style={{ fontSize: 12, color: "#aaa", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{article.url}</div>
-              )}
-            </div>
-          ))}
-        </div>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <tbody>
+            {filtered.map(article => (
+              <tr key={article.id} onClick={() => onSelect(article.id)} style={{ cursor: "pointer", borderBottom: "1px solid #eee" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
+                onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                <td style={{ padding: "6px 0", verticalAlign: "top" }}>
+                  <div style={{ fontFamily: "Georgia, serif", fontSize: 15, color: "#00e", textDecoration: "underline" }}>{article.title}</div>
+                  <div style={{ fontFamily: "Arial, sans-serif", fontSize: 12, color: "#555", marginTop: 2 }}>
+                    {[article.author, article.publication, article.datePublished].filter(Boolean).join(" · ")}
+                  </div>
+                  {article.url && <div style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#999", marginTop: 1 }}>{article.url}</div>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );
