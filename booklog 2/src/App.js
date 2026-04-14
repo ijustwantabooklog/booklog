@@ -165,7 +165,7 @@ function Nav({ username, screen, go, onNew, onSignOut }) {
   const page = ["reading","diary","books","articles","following","projects","profile"].includes(screen.type) ? screen.type : "";
 
   return (
-    <div style={{ borderBottom: "2px solid #000" }}>
+    <div style={{ maxWidth: 900, margin: "0 auto" }}>
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "8px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ fontSize: 18, fontWeight: "bold", fontFamily: "Georgia, serif" }}>
           Reading Archive / <span
