@@ -32,4 +32,6 @@ button.primary {
   border: none;
 }
 button.primary:hover { background: #c5206e; }
-table { border-collapse: collapse; width: 100%;
+table { border-collapse: collapse; width: 100%; }
+th { font-weight: bold; text-align: left; border-bottom: 1px solid #000; padding: 3px 6px; font-size: 13px; font-family: Arial, sans-serif; }
+td { padding: 4px 6px; border-bottom: 1px solid #eee; vertical-align: top; }
