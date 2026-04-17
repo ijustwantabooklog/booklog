@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
-import { doc, onSnapshot, deleteDoc, collection, query, orderBy } from "firebase/firestore";
+import { doc, onSnapshot, deleteDoc, updateDoc, collection, query, orderBy, serverTimestamp } from "firebase/firestore";
 
 export default function EntryDetail({ entryId, entryType, userId, onBack, onOpenSession }) {
   const [entry, setEntry] = useState(null);
   const [notes, setNotes] = useState([]);
-  const [showNotUseful, setShowNotUseful] = useState(false);
 
   useEffect(() => {
     const u1 = onSnapshot(doc(db, "users", userId, entryType, entryId), d => {
@@ -24,77 +23,86 @@ export default function EntryDetail({ entryId, entryType, userId, onBack, onOpen
     onBack();
   };
 
-  if (!entry) return <div style={{ padding: 20 }}>loading...</div>;
+  const setUseful = async (value) => {
+    await updateDoc(doc(db, "users", userId, entryType, entryId), { useful: value, updatedAt: serverTimestamp() });
+  };
 
-  const usefulNotes = notes.filter(n => n.useful !== false);
-  const notUsefulNotes = notes.filter(n => n.useful === false);
+  if (!entry) return <div className="wrap mono">loading...</div>;
+
   const title = entry.isChapter && entry.chapterTitle
-    ? `${entry.chapterTitle} (${entry.chapterNumber || "chapter"} of ${entry.title})`
+    ? `${entry.chapterTitle} (${entry.chapterNumber || "ch."} of ${entry.title})`
     : entry.title;
 
-  const renderNotes = (list) => (
-    <table style={{ marginTop: 8 }}>
-      <thead>
-        <tr>
-          <th style={{ width: 50 }}>Pg</th>
-          <th style={{ width: 50 }}>Type</th>
-          <th>Content</th>
-          <th style={{ width: 60 }}>Useful</th>
-        </tr>
-      </thead>
-      <tbody>
-        {list.map(note => (
-          <tr key={note.id} style={{ background: note.useful === false ? "#fff8f8" : "#fff" }}>
-            <td style={{ color: "#e8318a", fontFamily: "Arial, sans-serif", fontSize: 13 }}>{note.page || "—"}</td>
-            <td style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#666" }}>{note.type}</td>
-            <td style={{ fontFamily: note.type === "quote" ? "Georgia, serif" : "Arial, sans-serif", fontSize: 14 }}>{note.text}</td>
-            <td style={{ fontFamily: "Arial, sans-serif", fontSize: 12, color: note.useful === true ? "green" : note.useful === false ? "red" : "#999" }}>
-              {note.useful === true ? "✓" : note.useful === false ? "✗" : "—"}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-
   return (
-    <div className="page-wrap">
-      <div style={{ marginBottom: 12 }}>
-        <span className="link" onClick={onBack} style={{ fontFamily: "Arial, sans-serif", fontSize: 13 }}>← back</span>
+    <div className="wrap">
+      <div style={{ marginBottom: 8 }}>
+        <a className="mono" onClick={onBack} style={{ fontSize: 13 }}>← back</a>
       </div>
 
-      <div style={{ borderBottom: "1px solid #ccc", paddingBottom: 10, marginBottom: 12 }}>
-        <h1 style={{ fontFamily: "Georgia, serif", fontSize: 20 }}>{title}</h1>
-        <div style={{ fontFamily: "Arial, sans-serif", fontSize: 13, color: "#555", marginTop: 4 }}>
+      <div style={{ borderBottom: "2px solid #000", paddingBottom: 8, marginBottom: 10 }}>
+        <h1 style={{ fontStyle: "italic", fontWeight: "bold" }}>{title}</h1>
+        <div className="mono" style={{ color: "#555", marginTop: 4 }}>
           {entry.author}
           {entryType === "articles" && entry.publication && ` · ${entry.publication}`}
           {(entry.year || entry.datePublished) && ` · ${entry.year || entry.datePublished}`}
         </div>
-        {entry.url && <div style={{ fontFamily: "Arial, sans-serif", fontSize: 12, color: "#00e", marginTop: 4 }}>
-          <a href={entry.url.startsWith("http") ? entry.url : `https://doi.org/${entry.url}`} target="_blank" rel="noopener noreferrer">{entry.url}</a>
-        </div>}
-        <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
-          <button onClick={() => onOpenSession(entryId, entryType)} style={{ width: "auto", padding: "3px 12px" }}>Open reading session →</button>
-          <button onClick={handleDelete} style={{ width: "auto", padding: "3px 12px", color: "#cc0000", borderColor: "#cc0000" }}>Delete entry</button>
-        </div>
+        {entry.url && (
+          <div style={{ marginTop: 4 }}>
+            <a href={entry.url.startsWith("http") ? entry.url : `https://doi.org/${entry.url}`}
+              target="_blank" rel="noopener noreferrer" className="mono" style={{ fontSize: 13 }}>
+              {entry.url}
+            </a>
+          </div>
+        )}
       </div>
 
-      {notes.length === 0 && <p style={{ color: "#666", fontStyle: "italic" }}>No notes yet.</p>}
+      {/* Useful verdict */}
+      <div className="mono" style={{ marginBottom: 12, fontSize: 13 }}>
+        verdict:{" "}
+        <span onClick={() => setUseful(true)}
+          style={{ cursor: "pointer", color: entry.useful === true ? "green" : "#00c", textDecoration: "underline", marginRight: 10, fontWeight: entry.useful === true ? "bold" : "normal" }}>
+          [useful]
+        </span>
+        <span onClick={() => setUseful(false)}
+          style={{ cursor: "pointer", color: entry.useful === false ? "#c00" : "#00c", textDecoration: "underline", fontWeight: entry.useful === false ? "bold" : "normal" }}>
+          [not useful]
+        </span>
+        {entry.useful != null && (
+          <span onClick={() => setUseful(null)}
+            style={{ cursor: "pointer", color: "#999", textDecoration: "underline", marginLeft: 10 }}>
+            [clear]
+          </span>
+        )}
+        <span style={{ marginLeft: 20 }}>
+          <a className="mono" style={{ fontSize: 13 }} onClick={() => onOpenSession(entryId, entryType)}>[open reading session →]</a>
+        </span>
+        <span style={{ marginLeft: 16 }}>
+          <span className="mono" style={{ fontSize: 13, color: "#c00", cursor: "pointer", textDecoration: "underline" }}
+            onClick={handleDelete}>[delete entry]</span>
+        </span>
+      </div>
 
-      {usefulNotes.length > 0 && (
-        <div>
-          <div className="section-head">Notes ({usefulNotes.length})</div>
-          {renderNotes(usefulNotes)}
-        </div>
-      )}
-
-      {notUsefulNotes.length > 0 && (
-        <div style={{ marginTop: 16 }}>
-          <div className="section-head" style={{ cursor: "pointer" }} onClick={() => setShowNotUseful(p => !p)}>
-            Not useful ({notUsefulNotes.length}) {showNotUseful ? "▼" : "▶"}
-          </div>
-          {showNotUseful && renderNotes(notUsefulNotes)}
-        </div>
+      {/* Notes */}
+      {notes.length === 0 && <p style={{ fontStyle: "italic", color: "#888" }}>No notes yet.</p>}
+      {notes.length > 0 && (
+        <table className="bordered">
+          <thead>
+            <tr>
+              <th style={{ width: 42 }}>pg</th>
+              <th style={{ width: 50 }}>type</th>
+              <th>content</th>
+            </tr>
+          </thead>
+          <tbody>
+            {notes.map(note => (
+              <tr key={note.id}>
+                <td className="pg-col">{note.page || "—"}</td>
+                <td className="type-col">{note.type}</td>
+                <td style={{ fontStyle: note.type === "quote" ? "italic" : "normal", fontSize: 16 }}>{note.text}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );
