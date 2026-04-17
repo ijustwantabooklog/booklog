@@ -19,52 +19,60 @@ export default function Library({ userId, onOpenSession, onViewDetail }) {
   }, [userId]);
 
   const all = tab === "books" ? books : tab === "articles" ? articles : [...books, ...articles];
-  const filtered = all.filter(e =>
-    e.title?.toLowerCase().includes(search.toLowerCase()) ||
-    e.author?.toLowerCase().includes(search.toLowerCase())
-  ).sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+  const filtered = all
+    .filter(e => e.title?.toLowerCase().includes(search.toLowerCase()) || e.author?.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => (a.title || "").localeCompare(b.title || ""));
 
   const getTitle = (e) => e.isChapter && e.chapterTitle ? `${e.chapterTitle} [${e.title}]` : e.title;
 
+  const usefulLabel = (u) => {
+    if (u === true) return <span className="mono" style={{ fontSize: 12, color: "green" }}> [useful]</span>;
+    if (u === false) return <span className="mono" style={{ fontSize: 12, color: "#c00" }}> [not useful]</span>;
+    return null;
+  };
+
   return (
-    <div className="page-wrap">
+    <div className="wrap">
       <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." style={{ maxWidth: 300 }} />
-        <div style={{ display: "flex", border: "1px solid #999" }}>
-          {[["all","All"],["books","Books"],["articles","Articles"]].map(([val, label]) => (
-            <button key={val} onClick={() => setTab(val)}
-              style={{ padding: "3px 10px", fontSize: 12, border: "none", borderRight: val !== "articles" ? "1px solid #999" : "none", background: tab === val ? "#000" : "#f0f0f0", color: tab === val ? "#fff" : "#000", cursor: "pointer", fontFamily: "Arial, sans-serif" }}>
-              {label}
-            </button>
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="search titles, authors..." style={{ width: 280 }} />
+        <span className="mono" style={{ fontSize: 13 }}>
+          {["all","books","articles"].map(t => (
+            <span key={t}>
+              <span onClick={() => setTab(t)}
+                style={{ cursor: "pointer", color: tab === t ? "#000" : "#00c", textDecoration: tab === t ? "none" : "underline", fontWeight: tab === t ? "bold" : "normal", marginRight: 10 }}>
+                [{t}]
+              </span>
+            </span>
           ))}
-        </div>
+        </span>
       </div>
 
-      {loading && <p style={{ color: "#666", fontStyle: "italic" }}>loading...</p>}
-      {!loading && filtered.length === 0 && <p style={{ color: "#666", fontStyle: "italic" }}>nothing found</p>}
+      {loading && <p className="mono">loading...</p>}
+      {!loading && filtered.length === 0 && <p style={{ fontStyle: "italic", color: "#555" }}>nothing found</p>}
 
       {!loading && filtered.length > 0 && (
-        <table>
+        <table className="bordered">
           <thead>
             <tr>
-              <th>Title</th>
-              <th style={{ width: 180 }}>Author</th>
-              <th style={{ width: 100 }}></th>
+              <th>title</th>
+              <th style={{ width: 180 }}>author</th>
+              <th style={{ width: 80 }}>verdict</th>
+              <th style={{ width: 80 }}></th>
             </tr>
           </thead>
           <tbody>
             {filtered.map(entry => (
-              <tr key={entry.id}
-                onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
-                onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                <td>
-                  <span className="link" style={{ fontFamily: "Georgia, serif" }} onClick={() => onViewDetail(entry.id, entry.col)}>{getTitle(entry)}</span>
-                  {entry.col === "articles" && <span style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#e8318a", border: "1px solid #e8318a", padding: "0 4px", marginLeft: 6 }}>article</span>}
-                  {entry.currentlyReading && <span style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#e8318a", border: "1px solid #e8318a", padding: "0 4px", marginLeft: 4 }}>reading</span>}
+              <tr key={entry.id}>
+                <td style={{ fontSize: 16 }}>
+                  <a onClick={() => onViewDetail(entry.id, entry.col)} style={{ fontStyle: "italic" }}>{getTitle(entry)}</a>
+                  {entry.col === "articles" && <span className="mono" style={{ fontSize: 12, color: "#888" }}> [article]</span>}
+                  {entry.currentlyReading && <span className="mono" style={{ fontSize: 12, color: "#888" }}> [reading]</span>}
                 </td>
-                <td style={{ fontFamily: "Arial, sans-serif", fontSize: 13, color: "#555" }}>{entry.author}</td>
+                <td className="mono" style={{ fontSize: 13, color: "#555" }}>{entry.author}</td>
+                <td>{usefulLabel(entry.useful)}</td>
                 <td style={{ textAlign: "right" }}>
-                  <span className="link" style={{ fontSize: 13 }} onClick={() => onOpenSession(entry.id, entry.col)}>open →</span>
+                  <a className="mono" style={{ fontSize: 12 }} onClick={() => onOpenSession(entry.id, entry.col)}>[open →]</a>
                 </td>
               </tr>
             ))}
