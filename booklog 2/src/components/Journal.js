@@ -6,7 +6,7 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
   const [books, setBooks] = useState([]);
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(null);
+  const [expanded, setExpanded] = useState({});
 
   useEffect(() => {
     let b = false, a = false;
@@ -23,15 +23,15 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
     return tb - ta;
   });
 
-  // Group by day
   const today = new Date().toDateString();
   const yesterday = new Date(Date.now() - 86400000).toDateString();
   const getLabel = (ts) => {
     if (!ts?.toDate) return null;
-    const d = ts.toDate().toDateString();
-    if (d === today) return "Today";
-    if (d === yesterday) return "Yesterday";
-    return ts.toDate().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    const d = ts.toDate();
+    const ds = d.toDateString();
+    if (ds === today) return "Today — " + d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    if (ds === yesterday) return "Yesterday — " + d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
   };
 
   const groups = [];
@@ -43,53 +43,79 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
     groups[groups.length - 1].entries.push(entry);
   });
 
-  const getTitle = (entry) => {
-    if (entry.isChapter && entry.chapterTitle) return `${entry.chapterTitle} [ch. of ${entry.title}]`;
-    return entry.title;
+  const getTitle = (e) => e.isChapter && e.chapterTitle
+    ? `${e.chapterTitle} [ch. of ${e.title}]`
+    : e.title;
+
+  const usefulLabel = (u) => {
+    if (u === true) return " — [useful]";
+    if (u === false) return " — [not useful]";
+    return "";
   };
 
   return (
-    <div className="page-wrap">
-      {loading && <p style={{ color: "#666", fontStyle: "italic" }}>loading...</p>}
+    <div className="wrap">
+      {loading && <p className="mono">loading...</p>}
       {!loading && groups.length === 0 && (
-        <p style={{ color: "#666", fontStyle: "italic" }}>Nothing logged yet. Click "+ Log" to start.</p>
+        <p style={{ fontStyle: "italic", color: "#555" }}>Nothing logged yet. Click [+ new entry] to start.</p>
       )}
 
       {groups.map(({ label, entries }) => (
-        <div key={label} style={{ marginBottom: 20 }}>
-          <div className="section-head">{label}</div>
-          <table>
-            <tbody>
-              {entries.map(entry => (
-                <React.Fragment key={entry.id}>
-                  <tr style={{ cursor: "pointer" }}
-                    onClick={() => setExpanded(expanded === entry.id ? null : entry.id)}
-                    onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
-                    onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                    <td style={{ width: 16, fontFamily: "Arial, sans-serif", fontSize: 11, color: "#999" }}>
-                      {expanded === entry.id ? "▼" : "▶"}
-                    </td>
-                    <td>
-                      <span style={{ fontFamily: "Georgia, serif", color: "#00e", textDecoration: "underline" }}>{getTitle(entry)}</span>
-                      <span style={{ fontFamily: "Arial, sans-serif", fontSize: 12, color: "#555", marginLeft: 8 }}>{entry.author}</span>
-                      {entry.col === "articles" && <span style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#e8318a", border: "1px solid #e8318a", padding: "0 4px", marginLeft: 8 }}>article</span>}
-                    </td>
-                  </tr>
-                  {expanded === entry.id && (
-                    <tr>
-                      <td></td>
-                      <td style={{ paddingBottom: 8, paddingTop: 4 }}>
-                        <div style={{ display: "flex", gap: 12, fontFamily: "Arial, sans-serif", fontSize: 13 }}>
-                          <span className="link" onClick={() => onOpenSession(entry.id, entry.col)}>open reading session →</span>
-                          <span className="link" onClick={() => onViewDetail(entry.id, entry.col)}>view full log</span>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
+        <div key={label}>
+          <div className="day-head">{label}</div>
+          {entries.map(entry => (
+            <div key={entry.id}>
+              <div style={{ padding: "3px 0", borderBottom: "1px solid #f0f0f0", display: "flex", alignItems: "baseline", gap: 6 }}>
+                <span className="mono" style={{ cursor: "pointer", userSelect: "none" }}
+                  onClick={() => setExpanded(p => ({ ...p, [entry.id]: !p[entry.id] }))}>
+                  {expanded[entry.id] ? "▼" : "▶"}
+                </span>
+                <span>
+                  <a onClick={() => onOpenSession(entry.id, entry.col)}
+                    style={{ fontStyle: "italic", fontSize: 16 }}>{getTitle(entry)}</a>
+                  <span className="mono" style={{ color: "#555" }}> — {entry.author}</span>
+                  {entry.col === "articles" && <span className="mono" style={{ color: "#555" }}> — article</span>}
+                  <span className="mono" style={{ color: entry.useful === true ? "green" : entry.useful === false ? "#c00" : "#999" }}>
+                    {usefulLabel(entry.useful)}
+                  </span>
+                </span>
+                <span style={{ marginLeft: "auto" }}>
+                  <a className="mono" style={{ fontSize: 12 }} onClick={() => onViewDetail(entry.id, entry.col)}>
+                    [full log]
+                  </a>
+                </span>
+              </div>
+
+              {expanded[entry.id] && (
+                <EntryNotes userId={userId} entryId={entry.id} entryCol={entry.col} />
+              )}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EntryNotes({ userId, entryId, entryCol }) {
+  const [notes, setNotes] = useState([]);
+  useEffect(() => {
+    return onSnapshot(
+      query(collection(db, "users", userId, entryCol, entryId, "notes"), orderBy("createdAt", "asc")),
+      snap => setNotes(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    );
+  }, [userId, entryId, entryCol]);
+
+  if (notes.length === 0) return (
+    <div className="mono" style={{ paddingLeft: 20, fontSize: 12, color: "#888", padding: "3px 0 3px 20px" }}>no notes yet</div>
+  );
+
+  return (
+    <div style={{ paddingLeft: 20, borderLeft: "2px solid #eee", marginLeft: 6, marginBottom: 4 }}>
+      {notes.map(note => (
+        <div key={note.id} style={{ padding: "2px 0", borderBottom: "1px solid #f5f5f5", display: "flex", gap: 8 }}>
+          <span className="mono" style={{ color: "#888", minWidth: 36, textAlign: "right", fontSize: 12 }}>{note.page || "—"}</span>
+          <span style={{ fontStyle: note.type === "quote" ? "italic" : "normal", fontSize: 15 }}>{note.text}</span>
         </div>
       ))}
     </div>
