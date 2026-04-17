@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { auth, provider, db } from "./firebase";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
-import { doc, onSnapshot, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import "./index.css";
 import Journal from "./components/Journal";
 import Library from "./components/Library";
@@ -32,60 +32,61 @@ export default function App() {
 
   const go = (s) => setScreen(s);
 
-  if (loading) return <div style={{ padding: 20, color: "#666" }}>loading...</div>;
+  if (loading) return <div className="mono" style={{ padding: 20 }}>loading...</div>;
 
   if (!user) return (
     <div style={{ padding: 40, maxWidth: 400, margin: "80px auto", textAlign: "center" }}>
-      <h1 style={{ marginBottom: 8 }}>Reading Archive</h1>
-      <p style={{ color: "#666", marginBottom: 20, fontStyle: "italic" }}>your personal research journal</p>
-      <button className="primary" onClick={() => signInWithPopup(auth, provider)} style={{ padding: "6px 20px", fontSize: 15 }}>
-        Sign in with Google
+      <h1 style={{ marginBottom: 6 }}>reading archive</h1>
+      <p style={{ fontStyle: "italic", color: "#555", marginBottom: 20, fontSize: 15 }}>a personal research journal</p>
+      <button className="primary" onClick={() => signInWithPopup(auth, provider)}>
+        sign in with google
       </button>
     </div>
   );
 
-  if (!username) return (
-    <UsernameSetup userId={user.uid} onComplete={setUsername} />
-  );
+  if (!username) return <UsernameSetup userId={user.uid} onComplete={setUsername} />;
 
-  const tabs = [["journal","Journal"],["library","Library"],["projects","Projects"]];
+  const tabs = [["journal","journal"],["library","library"],["projects","projects"]];
   const page = tabs.map(t => t[0]).includes(screen.type) ? screen.type : "";
 
-  // Full-screen reading session — no nav
   if (screen.type === "session") return (
     <ReadingSession
       entryId={screen.id}
       entryType={screen.entryType}
       userId={user.uid}
       onBack={() => go(screen.from || { type: "journal" })}
-      onViewDetail={(id, type) => go({ type: "detail", id, entryType: type, from: screen })}
+      onViewDetail={(id, type) => go({ type: "detail", id, entryType: type, from: { type: "session", id: screen.id, entryType: screen.entryType, from: screen.from } })}
+    />
+  );
+
+  if (screen.type === "add") return (
+    <AddEntry
+      userId={user.uid}
+      onCancel={() => go(screen.from || { type: "journal" })}
+      onSave={(id, type) => go({ type: "session", id, entryType: type, from: screen.from || { type: "journal" } })}
     />
   );
 
   return (
     <div>
-      {/* Nav */}
-      <div style={{ borderBottom: "1px solid #ccc" }}>
-        <div style={{ maxWidth: 960, margin: "0 auto", padding: "8px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: 17, fontWeight: "bold" }}>
-            Reading Archive / <span onClick={() => go({ type: "journal" })} className="link" style={{ fontWeight: "normal" }}>{username}</span>
-          </div>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <button className="primary" onClick={() => go({ type: "add", from: screen })} style={{ padding: "3px 12px" }}>+ Log</button>
-            <span className="link" style={{ fontSize: 13 }} onClick={() => signOut(auth)}>sign out</span>
-          </div>
-        </div>
-        <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 16px", display: "flex", gap: 2 }}>
-          {tabs.map(([type, label]) => (
-            <div key={type} onClick={() => go({ type })}
-              style={{ fontFamily: "Arial, sans-serif", fontSize: 13, padding: "4px 12px", border: "1px solid #ccc", borderBottom: page === type ? "1px solid #fff" : "1px solid #ccc", marginBottom: page === type ? -1 : 0, marginTop: 4, cursor: "pointer", background: page === type ? "#fff" : "#f5f5f5", fontWeight: page === type ? "bold" : "normal" }}>
-              {label}
-            </div>
-          ))}
-        </div>
+      <div className="site-header">
+        <span style={{ fontSize: 15 }}>reading archive / <span style={{ fontWeight: "bold" }}>{username}</span></span>
+        <span>
+          <a onClick={() => go({ type: "add", from: screen })} style={{ marginRight: 14 }}>[+ new entry]</a>
+          <a onClick={() => signOut(auth)}>[sign out]</a>
+        </span>
       </div>
 
-      {/* Pages */}
+      <div className="nav-bar">
+        {tabs.map(([type, label]) => (
+          <a key={type} onClick={() => go({ type })}
+            className={page === type ? "active" : ""}
+            style={{ cursor: "pointer" }}>
+            {page === type ? `[${label}]` : label}
+          </a>
+        ))}
+      </div>
+
       {screen.type === "journal" && (
         <Journal userId={user.uid}
           onOpenSession={(id, type) => go({ type: "session", id, entryType: type, from: screen })}
@@ -107,12 +108,6 @@ export default function App() {
           userId={user.uid}
           onBack={() => go(screen.from || { type: "journal" })}
           onOpenSession={(id, type) => go({ type: "session", id, entryType: type, from: screen })} />
-      )}
-      {screen.type === "add" && (
-        <AddEntry
-          userId={user.uid}
-          onCancel={() => go(screen.from || { type: "journal" })}
-          onSave={(id, type) => go({ type: "session", id, entryType: type, from: screen.from || { type: "journal" } })} />
       )}
     </div>
   );
