@@ -15,159 +15,165 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
   const pageRef = useRef(null);
 
   useEffect(() => {
-    const col = entryType === "books" ? "books" : "articles";
-    const u1 = onSnapshot(doc(db, "users", userId, col, entryId), d => {
+    const u1 = onSnapshot(doc(db, "users", userId, entryType, entryId), d => {
       if (d.exists()) setEntry({ id: d.id, ...d.data() });
     });
     const u2 = onSnapshot(
-      query(collection(db, "users", userId, col, entryId, "notes"), orderBy("createdAt", "asc")),
+      query(collection(db, "users", userId, entryType, entryId, "notes"), orderBy("createdAt", "asc")),
       snap => setNotes(snap.docs.map(d => ({ id: d.id, ...d.data() })))
     );
     return () => { u1(); u2(); };
   }, [entryId, entryType, userId]);
 
-  useEffect(() => {
-    pageRef.current?.focus();
-  }, []);
+  useEffect(() => { pageRef.current?.focus(); }, []);
 
   const save = async () => {
     if (!text.trim()) return;
-    const col = entryType === "books" ? "books" : "articles";
-    await addDoc(collection(db, "users", userId, col, entryId, "notes"), {
-      page: page.trim(),
-      text: text.trim(),
-      type: noteType,
-      useful: null,
-      createdAt: serverTimestamp(),
+    await addDoc(collection(db, "users", userId, entryType, entryId, "notes"), {
+      page: page.trim(), text: text.trim(), type: noteType, createdAt: serverTimestamp(),
     });
-    await updateDoc(doc(db, "users", userId, col, entryId), { updatedAt: serverTimestamp() });
+    await updateDoc(doc(db, "users", userId, entryType, entryId), { updatedAt: serverTimestamp() });
     setText(""); setPage("");
     pageRef.current?.focus();
   };
 
-  const markUseful = async (noteId, value) => {
-    const col = entryType === "books" ? "books" : "articles";
-    await updateDoc(doc(db, "users", userId, col, entryId, "notes", noteId), { useful: value });
+  const deleteNote = async (id) => {
+    await deleteDoc(doc(db, "users", userId, entryType, entryId, "notes", id));
   };
 
-  const deleteNote = async (noteId) => {
-    const col = entryType === "books" ? "books" : "articles";
-    await deleteDoc(doc(db, "users", userId, col, entryId, "notes", noteId));
-  };
-
-  const saveEdit = async (noteId) => {
-    const col = entryType === "books" ? "books" : "articles";
-    await updateDoc(doc(db, "users", userId, col, entryId, "notes", noteId), { text: editText, page: editPage });
+  const saveEdit = async (id) => {
+    await updateDoc(doc(db, "users", userId, entryType, entryId, "notes", id), { text: editText, page: editPage });
     setEditingId(null);
   };
 
-  if (!entry) return <div style={{ padding: 20 }}>loading...</div>;
+  const setUseful = async (value) => {
+    await updateDoc(doc(db, "users", userId, entryType, entryId), { useful: value, updatedAt: serverTimestamp() });
+  };
+
+  if (!entry) return <div className="wrap mono">loading...</div>;
 
   const title = entry.isChapter && entry.chapterTitle
-    ? `${entry.chapterTitle} (${entry.chapterNumber || "chapter"} of ${entry.title})`
+    ? `${entry.chapterTitle} (${entry.chapterNumber || "ch."} of ${entry.title})`
     : entry.title;
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto", padding: "12px 16px 60px" }}>
-      {/* Header */}
-      <div style={{ borderBottom: "1px solid #ccc", paddingBottom: 8, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <div>
-          <span className="link" onClick={onBack} style={{ fontFamily: "Arial, sans-serif", fontSize: 13 }}>← back</span>
-          <span style={{ margin: "0 8px", color: "#ccc" }}>|</span>
-          <span style={{ fontFamily: "Georgia, serif", fontSize: 16, fontWeight: "bold" }}>{title}</span>
-          {entry.author && <span style={{ fontFamily: "Arial, sans-serif", fontSize: 13, color: "#555", marginLeft: 8 }}>{entry.author}</span>}
-        </div>
-        <span className="link" style={{ fontFamily: "Arial, sans-serif", fontSize: 13 }} onClick={() => onViewDetail(entryId, entryType)}>
-          view full log →
-        </span>
-      </div>
+    <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 1000, overflowY: "auto" }}>
+      <div style={{ maxWidth: 760, margin: "0 auto", padding: "10px 14px 60px" }}>
 
-      {/* Input row */}
-      <div style={{ display: "flex", gap: 0, marginBottom: 4, alignItems: "stretch" }}>
-        {/* Type toggle */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 0, marginRight: 6, flexShrink: 0 }}>
-          {[["quote","Q"],["note","N"]].map(([val, label]) => (
-            <button key={val} onClick={() => setNoteType(val)}
-              style={{ padding: "2px 8px", fontSize: 12, background: noteType === val ? "#000" : "#f0f0f0", color: noteType === val ? "#fff" : "#000", border: "1px solid #999", borderBottom: val === "quote" ? "none" : "1px solid #999", fontFamily: "Arial, sans-serif", cursor: "pointer" }}>
-              {label}
-            </button>
-          ))}
+        {/* Header */}
+        <div style={{ borderBottom: "2px solid #000", paddingBottom: 6, marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <div>
+            <span className="mono" style={{ cursor: "pointer" }} onClick={onBack}>← back</span>
+            <span className="mono" style={{ margin: "0 8px", color: "#ccc" }}>|</span>
+            <span style={{ fontStyle: "italic", fontSize: 20, fontWeight: "bold" }}>{title}</span>
+            {entry.author && <span className="mono" style={{ color: "#555", marginLeft: 8 }}>{entry.author}</span>}
+          </div>
+          <span className="mono" style={{ cursor: "pointer", color: "#00c", textDecoration: "underline" }}
+            onClick={() => onViewDetail(entryId, entryType)}>
+            [full log]
+          </span>
         </div>
-        {/* Page input */}
-        <input ref={pageRef} value={page} onChange={e => setPage(e.target.value)} placeholder="pg"
-          style={{ width: 52, flexShrink: 0, borderRight: "none", textAlign: "center", color: "#e8318a" }}
-          onKeyDown={e => { if (e.key === "Tab") { e.preventDefault(); textRef.current?.focus(); } }} />
-        {/* Text input */}
-        <textarea ref={textRef} value={text} onChange={e => setText(e.target.value)} rows={3}
-          placeholder={noteType === "quote" ? "Type or paste quote..." : "Write a note..."}
-          style={{ flex: 1, resize: "vertical", borderLeft: "none" }}
-          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); save(); } }} />
-        <button onClick={save} className="primary"
-          style={{ marginLeft: 6, alignSelf: "flex-end", padding: "4px 12px", whiteSpace: "nowrap", width: "auto" }}>
-          Save
-        </button>
-      </div>
-      <div style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#999", marginBottom: 16 }}>
-        Tab to move from page → text. Enter to save. Shift+Enter for new line.
-      </div>
 
-      {/* Notes table */}
-      {notes.length > 0 && (
-        <table>
+        {/* Useful verdict */}
+        <div className="mono" style={{ marginBottom: 10, fontSize: 13 }}>
+          mark as:{" "}
+          <span onClick={() => setUseful(true)}
+            style={{ cursor: "pointer", color: entry.useful === true ? "green" : "#00c", textDecoration: "underline", marginRight: 10, fontWeight: entry.useful === true ? "bold" : "normal" }}>
+            [useful]
+          </span>
+          <span onClick={() => setUseful(false)}
+            style={{ cursor: "pointer", color: entry.useful === false ? "#c00" : "#00c", textDecoration: "underline", fontWeight: entry.useful === false ? "bold" : "normal" }}>
+            [not useful]
+          </span>
+          {entry.useful != null && (
+            <span onClick={() => setUseful(null)}
+              style={{ cursor: "pointer", color: "#999", textDecoration: "underline", marginLeft: 10 }}>
+              [clear]
+            </span>
+          )}
+        </div>
+
+        {/* Notes table */}
+        <table className="bordered" style={{ marginBottom: 0 }}>
           <thead>
             <tr>
-              <th style={{ width: 50 }}>Pg</th>
-              <th style={{ width: 40 }}>Type</th>
-              <th>Content</th>
-              <th style={{ width: 120, textAlign: "right" }}>Useful?</th>
+              <th style={{ width: 42 }}>pg</th>
+              <th style={{ width: 50 }}>type</th>
+              <th>note / quote</th>
+              <th style={{ width: 50 }}></th>
             </tr>
           </thead>
           <tbody>
             {notes.map(note => (
-              <tr key={note.id} style={{ background: note.useful === false ? "#fff8f8" : note.useful === true ? "#f8fff8" : "#fff" }}>
-                <td style={{ color: "#e8318a", fontFamily: "Arial, sans-serif", fontSize: 13 }}>{note.page || "—"}</td>
-                <td style={{ fontFamily: "Arial, sans-serif", fontSize: 11, color: "#666" }}>{note.type}</td>
+              <tr key={note.id}>
+                <td className="pg-col">{note.page || "—"}</td>
+                <td className="type-col">{note.type}</td>
                 <td>
                   {editingId === note.id ? (
-                    <div style={{ display: "flex", gap: 4, flexDirection: "column" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                       <div style={{ display: "flex", gap: 4 }}>
-                        <input value={editPage} onChange={e => setEditPage(e.target.value)} style={{ width: 52 }} placeholder="pg" />
-                        <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={2} style={{ flex: 1, resize: "vertical" }} />
+                        <input value={editPage} onChange={e => setEditPage(e.target.value)}
+                          style={{ width: 50 }} placeholder="pg" />
+                        <textarea value={editText} onChange={e => setEditText(e.target.value)}
+                          rows={2} style={{ flex: 1 }} />
                       </div>
-                      <div style={{ display: "flex", gap: 4 }}>
-                        <button onClick={() => saveEdit(note.id)} style={{ width: "auto", padding: "2px 10px" }}>save</button>
-                        <button onClick={() => setEditingId(null)} style={{ width: "auto", padding: "2px 10px" }}>cancel</button>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button onClick={() => saveEdit(note.id)}>save</button>
+                        <button onClick={() => setEditingId(null)}>cancel</button>
                       </div>
                     </div>
                   ) : (
-                    <div>
-                      <span style={{ fontFamily: note.type === "quote" ? "Georgia, serif" : "Arial, sans-serif", fontSize: 14 }}>{note.text}</span>
-                      <span className="link" style={{ marginLeft: 8, fontSize: 12 }} onClick={() => { setEditingId(note.id); setEditText(note.text); setEditPage(note.page || ""); }}>edit</span>
-                      <span style={{ marginLeft: 6, fontSize: 12, color: "#aaa", cursor: "pointer" }} onClick={() => deleteNote(note.id)}>×</span>
-                    </div>
+                    <span style={{ fontStyle: note.type === "quote" ? "italic" : "normal", fontSize: 16 }}>
+                      {note.text}
+                    </span>
                   )}
                 </td>
                 <td style={{ textAlign: "right" }}>
-                  <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
-                    <button onClick={() => markUseful(note.id, true)}
-                      style={{ width: "auto", padding: "1px 8px", fontSize: 12, background: note.useful === true ? "#006600" : "#f0f0f0", color: note.useful === true ? "#fff" : "#000", border: "1px solid #999" }}>
-                      ✓ useful
-                    </button>
-                    <button onClick={() => markUseful(note.id, false)}
-                      style={{ width: "auto", padding: "1px 8px", fontSize: 12, background: note.useful === false ? "#cc0000" : "#f0f0f0", color: note.useful === false ? "#fff" : "#000", border: "1px solid #999" }}>
-                      ✗
-                    </button>
-                  </div>
+                  <span className="mono" style={{ fontSize: 12, color: "#00c", cursor: "pointer", textDecoration: "underline", marginRight: 6 }}
+                    onClick={() => { setEditingId(note.id); setEditText(note.text); setEditPage(note.page || ""); }}>
+                    edit
+                  </span>
+                  <span className="mono" style={{ fontSize: 13, color: "#999", cursor: "pointer" }}
+                    onClick={() => deleteNote(note.id)}>×</span>
                 </td>
               </tr>
             ))}
+
+            {/* Input row */}
+            <tr className="add-row">
+              <td className="pg-col">
+                <input ref={pageRef} value={page} onChange={e => setPage(e.target.value)}
+                  placeholder="pg" style={{ width: 38, fontSize: 13 }}
+                  onKeyDown={e => { if (e.key === "Tab") { e.preventDefault(); textRef.current?.focus(); } }} />
+              </td>
+              <td>
+                <select value={noteType} onChange={e => setNoteType(e.target.value)}
+                  style={{ width: 46, fontSize: 12, padding: "2px 2px" }}>
+                  <option value="quote">q</option>
+                  <option value="note">n</option>
+                </select>
+              </td>
+              <td>
+                <textarea ref={textRef} value={text} onChange={e => setText(e.target.value)}
+                  rows={2} placeholder="type and press enter to save..."
+                  style={{ width: "100%", fontSize: 16 }}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); save(); } }} />
+              </td>
+              <td>
+                <button className="primary" onClick={save} style={{ fontSize: 12, padding: "2px 8px" }}>save</button>
+              </td>
+            </tr>
           </tbody>
         </table>
-      )}
 
-      {notes.length === 0 && (
-        <p style={{ color: "#666", fontStyle: "italic", marginTop: 20 }}>No notes yet. Start typing above.</p>
-      )}
+        <div className="mono" style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
+          tab: pg → text &nbsp;|&nbsp; enter: save &nbsp;|&nbsp; shift+enter: new line
+        </div>
+
+        {notes.length === 0 && (
+          <p style={{ fontStyle: "italic", color: "#888", marginTop: 16, fontSize: 15 }}>No notes yet.</p>
+        )}
+      </div>
     </div>
   );
 }
