@@ -61,7 +61,7 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
       )}
 
       {groups.map(({ label, entries }) => (
-        <div key={label}>
+        <div key={label} style={{ marginBottom: 20 }}>
           <div className="day-head">{label}</div>
           {entries.map(entry => (
             <div key={entry.id}>
