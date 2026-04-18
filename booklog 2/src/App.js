@@ -69,46 +69,76 @@ export default function App() {
 
   return (
     <div>
-      <div className="site-header">
-        <span style={{ fontSize: 15 }}>reading archive / <span style={{ fontWeight: "bold" }}>{username}</span></span>
-        <span>
-          <a onClick={() => go({ type: "add", from: screen })} style={{ marginRight: 14 }}>[+ new entry]</a>
-          <a onClick={() => signOut(auth)}>[sign out]</a>
-        </span>
+      {/* Header */}
+      <div style={{ background: "#000", color: "#fff", padding: "10px 20px", textAlign: "center", borderBottom: "2px solid #666" }}>
+        <div style={{ fontStyle: "italic", fontSize: 20, fontFamily: "Times New Roman, serif" }}>Reading Archive</div>
+        <div className="mono" style={{ fontSize: 12, color: "#ccc", marginTop: 2 }}>{username}</div>
       </div>
 
-      <div className="nav-bar">
-        {tabs.map(([type, label]) => (
-          <a key={type} onClick={() => go({ type })}
-            className={page === type ? "active" : ""}
-            style={{ cursor: "pointer" }}>
-            {page === type ? `[${label}]` : label}
-          </a>
-        ))}
-      </div>
+      {/* Body: sidebar + content */}
+      <div style={{ display: "flex", minHeight: "calc(100vh - 60px)" }}>
 
-      {screen.type === "journal" && (
-        <Journal userId={user.uid}
-          onOpenSession={(id, type) => go({ type: "session", id, entryType: type, from: screen })}
-          onViewDetail={(id, type) => go({ type: "detail", id, entryType: type, from: screen })} />
-      )}
-      {screen.type === "library" && (
-        <Library userId={user.uid}
-          onOpenSession={(id, type) => go({ type: "session", id, entryType: type, from: screen })}
-          onViewDetail={(id, type) => go({ type: "detail", id, entryType: type, from: screen })} />
-      )}
-      {screen.type === "projects" && (
-        <Projects userId={user.uid}
-          onViewDetail={(id, type) => go({ type: "detail", id, entryType: type, from: screen })} />
-      )}
-      {screen.type === "detail" && (
-        <EntryDetail
-          entryId={screen.id}
-          entryType={screen.entryType}
-          userId={user.uid}
-          onBack={() => go(screen.from || { type: "journal" })}
-          onOpenSession={(id, type) => go({ type: "session", id, entryType: type, from: screen })} />
-      )}
+        {/* Sidebar */}
+        <div style={{ width: 160, borderRight: "1px solid #ccc", padding: "12px 10px", flexShrink: 0 }}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ background: "#99ccff", fontWeight: "bold", fontSize: 13, fontFamily: "Arial, sans-serif", padding: "2px 6px", marginBottom: 4, textAlign: "center" }}>
+              Navigate
+            </div>
+            {tabs.map(([type, label]) => (
+              <div key={type} onClick={() => go({ type })}
+                style={{ padding: "2px 4px", cursor: "pointer" }}>
+                <a style={{ fontSize: 15, fontWeight: page === type ? "bold" : "normal", textDecoration: page === type ? "none" : "underline", color: page === type ? "#000" : "#00c" }}>
+                  {label}
+                </a>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <div style={{ background: "#99ccff", fontWeight: "bold", fontSize: 13, fontFamily: "Arial, sans-serif", padding: "2px 6px", marginBottom: 4, textAlign: "center" }}>
+              Actions
+            </div>
+            <div style={{ padding: "2px 4px" }}>
+              <a onClick={() => go({ type: "add", from: screen })}
+                style={{ fontSize: 15, color: "#00c", textDecoration: "underline", cursor: "pointer" }}>
+                + new entry
+              </a>
+            </div>
+            <div style={{ padding: "2px 4px" }}>
+              <a onClick={() => signOut(auth)}
+                style={{ fontSize: 15, color: "#00c", textDecoration: "underline", cursor: "pointer" }}>
+                sign out
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div style={{ flex: 1, overflow: "auto" }}>
+          {screen.type === "journal" && (
+            <Journal userId={user.uid}
+              onOpenSession={(id, type) => go({ type: "session", id, entryType: type, from: screen })}
+              onViewDetail={(id, type) => go({ type: "detail", id, entryType: type, from: screen })} />
+          )}
+          {screen.type === "library" && (
+            <Library userId={user.uid}
+              onOpenSession={(id, type) => go({ type: "session", id, entryType: type, from: screen })}
+              onViewDetail={(id, type) => go({ type: "detail", id, entryType: type, from: screen })} />
+          )}
+          {screen.type === "projects" && (
+            <Projects userId={user.uid}
+              onViewDetail={(id, type) => go({ type: "detail", id, entryType: type, from: screen })} />
+          )}
+          {screen.type === "detail" && (
+            <EntryDetail
+              entryId={screen.id}
+              entryType={screen.entryType}
+              userId={user.uid}
+              onBack={() => go(screen.from || { type: "journal" })}
+              onOpenSession={(id, type) => go({ type: "session", id, entryType: type, from: screen })} />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
