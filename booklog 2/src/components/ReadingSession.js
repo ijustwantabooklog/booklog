@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
-import { doc, onSnapshot, collection, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "firebase/firestore";
+import { doc, onSnapshot, collection, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp, getDocs } from "firebase/firestore";
 
 export default function ReadingSession({ entryId, entryType, userId, onBack, onViewDetail }) {
   const [entry, setEntry] = useState(null);
@@ -11,6 +11,8 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState("");
   const [editPage, setEditPage] = useState("");
+  const [projects, setProjects] = useState([]);
+  const [showProjectPrompt, setShowProjectPrompt] = useState(false);
   const textRef = useRef(null);
   const pageRef = useRef(null);
 
@@ -22,7 +24,11 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
       query(collection(db, "users", userId, entryType, entryId, "notes"), orderBy("createdAt", "asc")),
       snap => setNotes(snap.docs.map(d => ({ id: d.id, ...d.data() })))
     );
-    return () => { u1(); u2(); };
+    const u3 = onSnapshot(
+      query(collection(db, "users", userId, "projects"), orderBy("createdAt", "desc")),
+      snap => setProjects(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    );
+    return () => { u1(); u2(); u3(); };
   }, [entryId, entryType, userId]);
 
   useEffect(() => { pageRef.current?.focus(); }, []);
@@ -48,6 +54,18 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
 
   const setUseful = async (value) => {
     await updateDoc(doc(db, "users", userId, entryType, entryId), { useful: value, updatedAt: serverTimestamp() });
+    if (value === true && projects.length > 0) setShowProjectPrompt(true);
+  };
+
+  const addToProject = async (projectId) => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project || !entry) return;
+    await addDoc(collection(db, "users", userId, "projects", projectId, "items"), {
+      entryId, entryType,
+      entryTitle: entry.isChapter && entry.chapterTitle ? entry.chapterTitle : entry.title,
+      addedAt: serverTimestamp(),
+    });
+    setShowProjectPrompt(false);
   };
 
   if (!entry) return <div className="wrap mono">loading...</div>;
@@ -60,7 +78,6 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
     <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 1000, overflowY: "auto" }}>
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "10px 14px 60px" }}>
 
-        {/* Header */}
         <div style={{ borderBottom: "2px solid #000", paddingBottom: 6, marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
           <div>
             <span className="mono" style={{ cursor: "pointer" }} onClick={onBack}>← back</span>
@@ -69,9 +86,7 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
             {entry.author && <span className="mono" style={{ color: "#555", marginLeft: 8 }}>{entry.author}</span>}
           </div>
           <span className="mono" style={{ cursor: "pointer", color: "#00c", textDecoration: "underline" }}
-            onClick={() => onViewDetail(entryId, entryType)}>
-            [full log]
-          </span>
+            onClick={() => onViewDetail(entryId, entryType)}>[full log]</span>
         </div>
 
         {/* Useful verdict */}
@@ -86,12 +101,31 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
             [not useful]
           </span>
           {entry.useful != null && (
-            <span onClick={() => setUseful(null)}
+            <span onClick={() => { setUseful(null); setShowProjectPrompt(false); }}
               style={{ cursor: "pointer", color: "#999", textDecoration: "underline", marginLeft: 10 }}>
               [clear]
             </span>
           )}
         </div>
+
+        {/* Project prompt */}
+        {showProjectPrompt && (
+          <div style={{ border: "1px solid #999", padding: "8px 10px", marginBottom: 10, background: "#fffde8" }}>
+            <span className="mono" style={{ fontSize: 13 }}>add to project:{" "}</span>
+            {projects.map(p => (
+              <span key={p.id}>
+                <span className="mono" style={{ fontSize: 13, color: "#00c", textDecoration: "underline", cursor: "pointer", marginRight: 10 }}
+                  onClick={() => addToProject(p.id)}>
+                  {p.title}
+                </span>
+              </span>
+            ))}
+            <span className="mono" style={{ fontSize: 13, color: "#999", textDecoration: "underline", cursor: "pointer" }}
+              onClick={() => setShowProjectPrompt(false)}>
+              [skip]
+            </span>
+          </div>
+        )}
 
         {/* Notes table */}
         <table className="bordered" style={{ marginBottom: 0 }}>
@@ -112,10 +146,8 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
                   {editingId === note.id ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                       <div style={{ display: "flex", gap: 4 }}>
-                        <input value={editPage} onChange={e => setEditPage(e.target.value)}
-                          style={{ width: 50 }} placeholder="pg" />
-                        <textarea value={editText} onChange={e => setEditText(e.target.value)}
-                          rows={2} style={{ flex: 1 }} />
+                        <input value={editPage} onChange={e => setEditPage(e.target.value)} style={{ width: 50 }} placeholder="pg" />
+                        <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={2} style={{ flex: 1 }} />
                       </div>
                       <div style={{ display: "flex", gap: 6 }}>
                         <button onClick={() => saveEdit(note.id)}>save</button>
@@ -123,23 +155,17 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
                       </div>
                     </div>
                   ) : (
-                    <span style={{ fontStyle: note.type === "quote" ? "italic" : "normal", fontSize: 16 }}>
-                      {note.text}
-                    </span>
+                    <span style={{ fontStyle: note.type === "quote" ? "italic" : "normal", fontSize: 16 }}>{note.text}</span>
                   )}
                 </td>
                 <td style={{ textAlign: "right" }}>
                   <span className="mono" style={{ fontSize: 12, color: "#00c", cursor: "pointer", textDecoration: "underline", marginRight: 6 }}
-                    onClick={() => { setEditingId(note.id); setEditText(note.text); setEditPage(note.page || ""); }}>
-                    edit
-                  </span>
+                    onClick={() => { setEditingId(note.id); setEditText(note.text); setEditPage(note.page || ""); }}>edit</span>
                   <span className="mono" style={{ fontSize: 13, color: "#999", cursor: "pointer" }}
                     onClick={() => deleteNote(note.id)}>×</span>
                 </td>
               </tr>
             ))}
-
-            {/* Input row */}
             <tr className="add-row">
               <td className="pg-col">
                 <input ref={pageRef} value={page} onChange={e => setPage(e.target.value)}
