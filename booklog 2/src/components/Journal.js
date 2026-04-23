@@ -79,10 +79,6 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
             <div key={entry.id}>
               <div style={{ padding: "6px 0 4px", borderBottom: "1px solid #eee" }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                  <span className="mono" style={{ cursor: "pointer", userSelect: "none", flexShrink: 0 }}
-                    onClick={() => setExpanded(p => ({ ...p, [entry.id]: !p[entry.id] }))}>
-                    {expanded[entry.id] ? "▼" : "▶"}
-                  </span>
                   <a onClick={() => onOpenSession(entry.id, entry.col)}
                     style={{ fontStyle: entry.col === "books" ? "italic" : "normal", fontSize: 17, lineHeight: 1.3 }}>
                     {entry.col === "articles" ? `"${getTitle(entry)}"` : getTitle(entry)}
@@ -91,15 +87,23 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
                     {entry.col === "books" ? "book" : "article"}
                   </span>
                 </div>
-                <div style={{ paddingLeft: 18, marginTop: 2, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <div style={{ marginTop: 2, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                   <span className="mono" style={{ fontSize: 13, color: "#555" }}>
                     {entry.author}
-                    {entry.col === "articles" && <span style={{ color: "#888" }}> — article</span>}
                     {entry.useful === true && <span style={{ color: "green" }}> — [useful]</span>}
                     {entry.useful === false && <span style={{ color: "#c00" }}> — [not useful]</span>}
+                    {entry.updatedAt?.toDate && (
+                      <span style={{ color: "#aaa" }}> — {entry.updatedAt.toDate().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }).toLowerCase()}</span>
+                    )}
                   </span>
-                  <a className="mono" style={{ fontSize: 12, flexShrink: 0, marginLeft: 12 }}
-                    onClick={() => onViewDetail(entry.id, entry.col)}>[full log]</a>
+                  <span style={{ display: "flex", gap: 10, flexShrink: 0, marginLeft: 12 }}>
+                    <a className="mono" style={{ fontSize: 12 }}
+                      onClick={() => onViewDetail(entry.id, entry.col)}>[full log]</a>
+                    <a className="mono" style={{ fontSize: 12 }}
+                      onClick={() => setExpanded(p => ({ ...p, [entry.id]: !p[entry.id] }))}>
+                      {expanded[entry.id] ? "[−]" : "[+]"}
+                    </a>
+                  </span>
                 </div>
               </div>
 
