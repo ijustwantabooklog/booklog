@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
 import { doc, onSnapshot, collection, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
 export default function ReadingSession({ entryId, entryType, userId, onBack, onViewDetail }) {
   const [entry, setEntry] = useState(null);
@@ -24,6 +25,11 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
   const [projects, setProjects] = useState([]);
   const [showProjectPrompt, setShowProjectPrompt] = useState(false);
 
+  const [addingChapter, setAddingChapter] = useState(false);
+  const [chapterTitle, setChapterTitle] = useState("");
+  const [chapterNumber, setChapterNumber] = useState("");
+  const [savingChapter, setSavingChapter] = useState(false);
+  const navigate = useNavigate();
   const textRef = useRef(null);
   const pageRef = useRef(null);
   const generalRef = useRef(null);
@@ -83,6 +89,29 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
     setEditingGeneralId(null);
   };
 
+  const saveChapter = async () => {
+    if (!chapterTitle.trim() || !entry) return;
+    setSavingChapter(true);
+    const ref = await addDoc(collection(db, "users", userId, "books"), {
+      title: entry.isChapter ? entry.title : entry.title,
+      author: entry.author || "",
+      year: entry.year || "",
+      coverUrl: entry.coverUrl || "",
+      isChapter: true,
+      chapterTitle: chapterTitle.trim(),
+      chapterNumber: chapterNumber.trim(),
+      type: "book",
+      currentlyReading: false,
+      useful: null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    setSavingChapter(false);
+    setAddingChapter(false);
+    setChapterTitle(""); setChapterNumber("");
+    navigate(`/session/books/${ref.id}`);
+  };
+
   const setUseful = async (value) => {
     await updateDoc(doc(db, "users", userId, entryType, entryId), { useful: value, updatedAt: serverTimestamp() });
     if (value === true && projects.length > 0) setShowProjectPrompt(true);
@@ -139,6 +168,50 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
             </span>
           )}
         </div>
+
+        {/* Add chapter — only for books */}
+        {entryType === "books" && (
+          <div className="mono" style={{ marginBottom: 10, fontSize: 13 }}>
+            <span onClick={() => setAddingChapter(p => !p)}
+              style={{ cursor: "pointer", color: "#00c", textDecoration: "underline" }}>
+              [+ add chapter]
+            </span>
+          </div>
+        )}
+
+        {addingChapter && (
+          <div style={{ border: "1px solid #999", padding: "10px 12px", marginBottom: 10, background: "#fffde8" }}>
+            <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, marginBottom: 8, fontWeight: "bold" }}>
+              Add a chapter of <span style={{ fontStyle: "italic" }}>{entry?.isChapter ? entry.title : entry?.title}</span>
+            </div>
+            <table style={{ width: "100%", marginBottom: 8 }}>
+              <tbody>
+                <tr>
+                  <td style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, width: 130, paddingRight: 8, paddingBottom: 6 }}>chapter title</td>
+                  <td style={{ paddingBottom: 6 }}>
+                    <input value={chapterTitle} onChange={e => setChapterTitle(e.target.value)} autoFocus
+                      placeholder="e.g. Introduction"
+                      onKeyDown={e => { if (e.key === "Enter") saveChapter(); }} />
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13 }}>chapter no.</td>
+                  <td>
+                    <input value={chapterNumber} onChange={e => setChapterNumber(e.target.value)}
+                      placeholder="e.g. Chapter 1 (optional)"
+                      onKeyDown={e => { if (e.key === "Enter") saveChapter(); }} />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="primary" onClick={saveChapter} disabled={savingChapter}>
+                {savingChapter ? "saving..." : "save and open →"}
+              </button>
+              <button onClick={() => { setAddingChapter(false); setChapterTitle(""); setChapterNumber(""); }}>cancel</button>
+            </div>
+          </div>
+        )}
 
         {/* Project prompt */}
         {showProjectPrompt && (
