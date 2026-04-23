@@ -58,7 +58,7 @@ export default function EntryDetail({ entryId, entryType, userId, onBack, onOpen
       </div>
 
       <div style={{ borderBottom: "2px solid #000", paddingBottom: 8, marginBottom: 10 }}>
-        <h1 style={{ fontStyle: "italic" }}>{title}</h1>
+        <h1 style={{ fontStyle: entryType === "books" ? "italic" : "normal" }}>{entryType === "articles" ? `"${title}"` : title}</h1>
         <div className="mono" style={{ color: "#555", marginTop: 4 }}>
           {entry.author}
           {entryType === "articles" && entry.publication && ` · ${entry.publication}`}
