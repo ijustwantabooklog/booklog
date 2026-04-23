@@ -116,11 +116,12 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
               return (
                 <div key={entry.id}>
                   <div style={{ padding: "6px 0 4px", borderBottom: "1px solid #eee" }}>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    <div style={{ lineHeight: 1.4 }}>
                       <a onClick={() => onOpenSession(entry.id, entry.col)}
-                        style={{ fontStyle: entry.col === "books" ? "italic" : "normal", fontSize: 17, lineHeight: 1.3 }}>
+                        style={{ fontStyle: entry.col === "books" ? "italic" : "normal", fontSize: 17 }}>
                         {entry.col === "articles" ? `"${getTitle(entry)}"` : getTitle(entry)}
                       </a>
+                      {" "}
                       <span className={entry.col === "books" ? "stamp stamp-book" : "stamp stamp-article"}>
                         {entry.col === "books" ? "book" : "article"}
                       </span>
