@@ -62,7 +62,19 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
 
       {groups.map(({ label, entries }) => (
         <div key={label} style={{ marginBottom: 20 }}>
-          <div className="day-head">{label}</div>
+          <div className="day-head">
+            {label}
+            <span className="mono" style={{ fontWeight: "normal", color: "#888", marginLeft: 10, fontSize: 12 }}>
+              {(() => {
+                const bCount = entries.filter(e => e.col === "books").length;
+                const aCount = entries.filter(e => e.col === "articles").length;
+                const parts = [];
+                if (bCount > 0) parts.push(`${bCount} book${bCount > 1 ? "s" : ""}`);
+                if (aCount > 0) parts.push(`${aCount} article${aCount > 1 ? "s" : ""}`);
+                return parts.join(", ");
+              })()}
+            </span>
+          </div>
           {entries.map(entry => (
             <div key={entry.id}>
               <div style={{ padding: "3px 0", borderBottom: "1px solid #f0f0f0", display: "flex", alignItems: "baseline", gap: 6 }}>
