@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { doc, onSnapshot, deleteDoc, updateDoc, collection, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
 export default function EntryDetail({ entryId, entryType, userId, onBack, onOpenSession }) {
   const [entry, setEntry] = useState(null);
   const [notes, setNotes] = useState([]);
   const [projects, setProjects] = useState([]);
   const [showProjectPrompt, setShowProjectPrompt] = useState(false);
+  const [addingChapter, setAddingChapter] = useState(false);
+  const [chapterTitle, setChapterTitle] = useState("");
+  const [chapterNumber, setChapterNumber] = useState("");
+  const [savingChapter, setSavingChapter] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const u1 = onSnapshot(doc(db, "users", userId, entryType, entryId), d => {
@@ -22,6 +28,30 @@ export default function EntryDetail({ entryId, entryType, userId, onBack, onOpen
     );
     return () => { u1(); u2(); u3(); };
   }, [entryId, entryType, userId]);
+
+  const saveChapter = async () => {
+    if (!chapterTitle.trim()) return;
+    setSavingChapter(true);
+    const ref = await addDoc(collection(db, "users", userId, "books"), {
+      title: entry.title,
+      author: entry.author,
+      year: entry.year || "",
+      coverUrl: entry.coverUrl || "",
+      isChapter: true,
+      chapterTitle: chapterTitle.trim(),
+      chapterNumber: chapterNumber.trim(),
+      type: "book",
+      currentlyReading: false,
+      useful: null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    setSavingChapter(false);
+    setAddingChapter(false);
+    setChapterTitle("");
+    setChapterNumber("");
+    navigate(`/session/books/${ref.id}`);
+  };
 
   const handleDelete = async () => {
     if (!window.confirm("Delete this entry and all its notes?")) return;
@@ -98,7 +128,37 @@ export default function EntryDetail({ entryId, entryType, userId, onBack, onOpen
           <span className="mono" style={{ fontSize: 13, color: "#c00", cursor: "pointer", textDecoration: "underline" }}
             onClick={handleDelete}>[delete]</span>
         </span>
+        {entryType === "books" && !entry.isChapter && (
+          <span style={{ marginLeft: 16 }}>
+            <span className="mono" style={{ fontSize: 13, color: "#00c", cursor: "pointer", textDecoration: "underline" }}
+              onClick={() => setAddingChapter(p => !p)}>[+ add chapter]</span>
+          </span>
+        )}
       </div>
+
+      {addingChapter && (
+        <div style={{ border: "1px solid #999", padding: "10px 12px", marginBottom: 12, background: "#fffde8" }}>
+          <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, marginBottom: 8, fontWeight: "bold" }}>
+            Add a chapter of <span style={{ fontStyle: "italic" }}>{entry.title}</span>
+          </div>
+          <table style={{ width: "100%", marginBottom: 8 }}>
+            <tbody>
+              <tr>
+                <td style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, width: 130, paddingRight: 8, paddingBottom: 6 }}>chapter title</td>
+                <td style={{ paddingBottom: 6 }}><input value={chapterTitle} onChange={e => setChapterTitle(e.target.value)} autoFocus placeholder="e.g. Introduction" onKeyDown={e => { if (e.key === "Enter") saveChapter(); }} /></td>
+              </tr>
+              <tr>
+                <td style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13 }}>chapter no.</td>
+                <td><input value={chapterNumber} onChange={e => setChapterNumber(e.target.value)} placeholder="e.g. Chapter 1 (optional)" onKeyDown={e => { if (e.key === "Enter") saveChapter(); }} /></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="primary" onClick={saveChapter} disabled={savingChapter}>{savingChapter ? "saving..." : "save and open session →"}</button>
+            <button onClick={() => { setAddingChapter(false); setChapterTitle(""); setChapterNumber(""); }}>cancel</button>
+          </div>
+        </div>
+      )}
 
       {/* Project prompt */}
       {showProjectPrompt && (
