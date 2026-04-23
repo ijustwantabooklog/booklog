@@ -62,7 +62,7 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
 
       {groups.map(({ label, entries }) => (
         <div key={label} style={{ marginBottom: 20 }}>
-          <div className="day-head">
+          <div className="day-head" style={{ fontSize: label.startsWith("Today") ? 16 : 13, borderBottom: label.startsWith("Today") ? "2px solid #000" : "1px dotted #999", marginBottom: label.startsWith("Today") ? 8 : 4 }}>
             {label}
             <span className="mono" style={{ fontWeight: "normal", color: "#888", marginLeft: 10, fontSize: 12 }}>
               {(() => {
