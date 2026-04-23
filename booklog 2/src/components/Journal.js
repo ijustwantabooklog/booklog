@@ -87,6 +87,9 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
                     style={{ fontStyle: entry.col === "books" ? "italic" : "normal", fontSize: 17, lineHeight: 1.3 }}>
                     {entry.col === "articles" ? `"${getTitle(entry)}"` : getTitle(entry)}
                   </a>
+                  <span className={entry.col === "books" ? "stamp stamp-book" : "stamp stamp-article"}>
+                    {entry.col === "books" ? "book" : "article"}
+                  </span>
                 </div>
                 <div style={{ paddingLeft: 18, marginTop: 2, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                   <span className="mono" style={{ fontSize: 13, color: "#555" }}>
