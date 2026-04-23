@@ -18,18 +18,19 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
     return () => { u1(); u2(); };
   }, [userId]);
 
-  // Load note counts for all entries
+  // Load note counts whenever entries change
   useEffect(() => {
     const allEntries = [...books, ...articles];
     if (allEntries.length === 0) return;
     const unsubs = allEntries.map(entry => {
-      return onSnapshot(
-        collection(db, "users", userId, entry.col, entry.id, "notes"),
+      const unsub = onSnapshot(
+        query(collection(db, "users", userId, entry.col, entry.id, "notes"), orderBy("createdAt", "asc")),
         snap => setNoteCounts(prev => ({ ...prev, [entry.id]: snap.size }))
       );
+      return unsub;
     });
     return () => unsubs.forEach(u => u());
-  }, [books, articles, userId]);
+  }, [books.length, articles.length, userId]);
 
   const all = [...books, ...articles].sort((a, b) => {
     const ta = a.updatedAt?.toDate ? a.updatedAt.toDate() : new Date(0);
