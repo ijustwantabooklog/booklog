@@ -18,12 +18,21 @@ export default function Library({ userId, onOpenSession, onViewDetail }) {
     return () => { u1(); u2(); };
   }, [userId]);
 
-  const all = tab === "books" ? books : tab === "articles" ? articles : [...books, ...articles];
-  const filtered = all
-    .filter(e => e.title?.toLowerCase().includes(search.toLowerCase()) || e.author?.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+  // Separate standalone books, chapters, and articles
+  const standaloneBooks = books.filter(b => !b.isChapter);
+  const chapters = books.filter(b => b.isChapter);
 
-  const getTitle = (e) => e.isChapter && e.chapterTitle ? `${e.chapterTitle} [${e.title}]` : e.title;
+  // Group chapters under their parent book title
+  const chaptersByBook = {};
+  chapters.forEach(ch => {
+    const key = ch.title || "Unknown book";
+    if (!chaptersByBook[key]) chaptersByBook[key] = [];
+    chaptersByBook[key].push(ch);
+  });
+
+  // Books that only exist as chapters (no standalone entry)
+  const standaloneBookTitles = new Set(standaloneBooks.map(b => b.title));
+  const chapterOnlyBooks = Object.keys(chaptersByBook).filter(t => !standaloneBookTitles.has(t));
 
   const usefulLabel = (u) => {
     if (u === true) return <span className="mono" style={{ fontSize: 12, color: "green" }}> [useful]</span>;
@@ -31,53 +40,151 @@ export default function Library({ userId, onOpenSession, onViewDetail }) {
     return null;
   };
 
+  const matchesSearch = (e) =>
+    !search ||
+    e.title?.toLowerCase().includes(search.toLowerCase()) ||
+    e.author?.toLowerCase().includes(search.toLowerCase()) ||
+    e.chapterTitle?.toLowerCase().includes(search.toLowerCase());
+
+  const visibleBooks = standaloneBooks.filter(matchesSearch);
+  const visibleArticles = articles.filter(matchesSearch);
+
   return (
     <div className="wrap">
-      <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="search titles, authors..." style={{ width: 280 }} />
         <span className="mono" style={{ fontSize: 13 }}>
           {["all","books","articles"].map(t => (
-            <span key={t}>
-              <span onClick={() => setTab(t)}
-                style={{ cursor: "pointer", color: tab === t ? "#000" : "#00c", textDecoration: tab === t ? "none" : "underline", fontWeight: tab === t ? "bold" : "normal", marginRight: 10 }}>
-                [{t}]
-              </span>
+            <span key={t} onClick={() => setTab(t)}
+              style={{ cursor: "pointer", color: tab === t ? "#000" : "#00c", textDecoration: tab === t ? "none" : "underline", fontWeight: tab === t ? "bold" : "normal", marginRight: 10 }}>
+              [{t}]
             </span>
           ))}
         </span>
       </div>
 
       {loading && <p className="mono">loading...</p>}
-      {!loading && filtered.length === 0 && <p style={{ fontStyle: "italic", color: "#555" }}>nothing found</p>}
 
-      {!loading && filtered.length > 0 && (
-        <table className="bordered">
-          <thead>
-            <tr>
-              <th>title</th>
-              <th style={{ width: 180 }}>author</th>
-              <th style={{ width: 80 }}>verdict</th>
-              <th style={{ width: 80 }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(entry => (
-              <tr key={entry.id}>
-                <td style={{ fontSize: 16 }}>
-                  <a onClick={() => onViewDetail(entry.id, entry.col)} style={{ fontStyle: "italic" }}>{getTitle(entry)}</a>
-                  {entry.col === "articles" && <span className="mono" style={{ fontSize: 12, color: "#888" }}> [article]</span>}
-                  {entry.currentlyReading && <span className="mono" style={{ fontSize: 12, color: "#888" }}> [reading]</span>}
-                </td>
-                <td className="mono" style={{ fontSize: 13, color: "#555" }}>{entry.author}</td>
-                <td>{usefulLabel(entry.useful)}</td>
-                <td style={{ textAlign: "right" }}>
-                  <a className="mono" style={{ fontSize: 12 }} onClick={() => onOpenSession(entry.id, entry.col)}>[open →]</a>
-                </td>
+      {/* Books section */}
+      {!loading && (tab === "all" || tab === "books") && (
+        <div style={{ marginBottom: 20 }}>
+          <div className="section-label">books</div>
+          {visibleBooks.length === 0 && chapterOnlyBooks.length === 0 && (
+            <p style={{ fontStyle: "italic", color: "#555" }}>no books found</p>
+          )}
+          <table className="bordered">
+            <thead>
+              <tr>
+                <th>title</th>
+                <th style={{ width: 180 }}>author</th>
+                <th style={{ width: 80 }}>verdict</th>
+                <th style={{ width: 70 }}></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {visibleBooks.map(book => (
+                <React.Fragment key={book.id}>
+                  {/* Standalone book row */}
+                  <tr>
+                    <td style={{ fontSize: 16 }}>
+                      <a onClick={() => onViewDetail(book.id, book.col)} style={{ fontStyle: "italic" }}>{book.title}</a>
+                      {book.currentlyReading && <span className="mono" style={{ fontSize: 12, color: "#888" }}> [reading]</span>}
+                    </td>
+                    <td className="mono" style={{ fontSize: 13, color: "#555" }}>{book.author}</td>
+                    <td>{usefulLabel(book.useful)}</td>
+                    <td style={{ textAlign: "right" }}>
+                      <a className="mono" style={{ fontSize: 12 }} onClick={() => onOpenSession(book.id, book.col)}>[open →]</a>
+                    </td>
+                  </tr>
+                  {/* Chapters of this book */}
+                  {chaptersByBook[book.title] && chaptersByBook[book.title]
+                    .filter(ch => !search || ch.chapterTitle?.toLowerCase().includes(search.toLowerCase()))
+                    .sort((a, b) => (a.chapterNumber || "").localeCompare(b.chapterNumber || ""))
+                    .map(ch => (
+                      <tr key={ch.id} style={{ background: "#fafafa" }}>
+                        <td style={{ fontSize: 15, paddingLeft: 28 }}>
+                          <span className="mono" style={{ color: "#aaa", marginRight: 6 }}>↳</span>
+                          <a onClick={() => onViewDetail(ch.id, ch.col)} style={{ fontStyle: "italic" }}>{ch.chapterTitle}</a>
+                          {ch.chapterNumber && <span className="mono" style={{ fontSize: 12, color: "#888" }}> [{ch.chapterNumber}]</span>}
+                        </td>
+                        <td className="mono" style={{ fontSize: 13, color: "#aaa" }}></td>
+                        <td>{usefulLabel(ch.useful)}</td>
+                        <td style={{ textAlign: "right" }}>
+                          <a className="mono" style={{ fontSize: 12 }} onClick={() => onOpenSession(ch.id, ch.col)}>[open →]</a>
+                        </td>
+                      </tr>
+                    ))}
+                </React.Fragment>
+              ))}
+
+              {/* Books that only exist as chapters (no standalone entry) */}
+              {chapterOnlyBooks.filter(t => !search || t.toLowerCase().includes(search.toLowerCase())).map(bookTitle => (
+                <React.Fragment key={bookTitle}>
+                  <tr style={{ background: "#f5f5f5" }}>
+                    <td style={{ fontSize: 16 }} colSpan={4}>
+                      <span style={{ fontStyle: "italic", color: "#555" }}>{bookTitle}</span>
+                      <span className="mono" style={{ fontSize: 12, color: "#aaa" }}> — chapters only</span>
+                    </td>
+                  </tr>
+                  {chaptersByBook[bookTitle]
+                    .sort((a, b) => (a.chapterNumber || "").localeCompare(b.chapterNumber || ""))
+                    .map(ch => (
+                      <tr key={ch.id} style={{ background: "#fafafa" }}>
+                        <td style={{ fontSize: 15, paddingLeft: 28 }}>
+                          <span className="mono" style={{ color: "#aaa", marginRight: 6 }}>↳</span>
+                          <a onClick={() => onViewDetail(ch.id, ch.col)} style={{ fontStyle: "italic" }}>{ch.chapterTitle}</a>
+                          {ch.chapterNumber && <span className="mono" style={{ fontSize: 12, color: "#888" }}> [{ch.chapterNumber}]</span>}
+                        </td>
+                        <td className="mono" style={{ fontSize: 13, color: "#555" }}>{ch.author}</td>
+                        <td>{usefulLabel(ch.useful)}</td>
+                        <td style={{ textAlign: "right" }}>
+                          <a className="mono" style={{ fontSize: 12 }} onClick={() => onOpenSession(ch.id, ch.col)}>[open →]</a>
+                        </td>
+                      </tr>
+                    ))}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Articles section */}
+      {!loading && (tab === "all" || tab === "articles") && (
+        <div>
+          <div className="section-label">articles</div>
+          {visibleArticles.length === 0 && (
+            <p style={{ fontStyle: "italic", color: "#555" }}>no articles found</p>
+          )}
+          {visibleArticles.length > 0 && (
+            <table className="bordered">
+              <thead>
+                <tr>
+                  <th>title</th>
+                  <th style={{ width: 180 }}>author</th>
+                  <th style={{ width: 80 }}>verdict</th>
+                  <th style={{ width: 70 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleArticles.map(article => (
+                  <tr key={article.id}>
+                    <td style={{ fontSize: 16 }}>
+                      <a onClick={() => onViewDetail(article.id, article.col)} style={{ fontStyle: "italic" }}>{article.title}</a>
+                      {article.publication && <span className="mono" style={{ fontSize: 12, color: "#888" }}> — {article.publication}</span>}
+                    </td>
+                    <td className="mono" style={{ fontSize: 13, color: "#555" }}>{article.author}</td>
+                    <td>{usefulLabel(article.useful)}</td>
+                    <td style={{ textAlign: "right" }}>
+                      <a className="mono" style={{ fontSize: 12 }} onClick={() => onOpenSession(article.id, article.col)}>[open →]</a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       )}
     </div>
   );
