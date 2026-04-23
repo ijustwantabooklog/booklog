@@ -133,7 +133,7 @@ export default function EntryDetail({ entryId, entryType, userId, onBack, onOpen
               <tr key={note.id}>
                 <td className="pg-col">{note.page || "—"}</td>
                 <td className="type-col">{note.type}</td>
-                <td style={{ fontStyle: note.type === "quote" ? "italic" : "normal", fontSize: 16 }}>{note.text}</td>
+                <td style={{ fontStyle: note.type === "quote" ? "italic" : "normal", fontSize: 16, color: note.type === "general" ? "#333" : "#000" }}>{note.text}</td>
               </tr>
             ))}
           </tbody>
