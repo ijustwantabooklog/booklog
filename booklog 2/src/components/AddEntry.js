@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { db } from "../firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, query, where } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
 async function searchBooks(q) {
   const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=6&key=AIzaSyAGIJE0s9K-wBC4lErKJgIhZ-cl5QRd0Rk`);
@@ -61,10 +62,27 @@ export default function AddEntry({ userId, onCancel, onSave }) {
 
   const pick = (r) => { setForm(f => ({ ...f, ...r })); setResults([]); setSearch(""); };
 
+  const navigate = useNavigate();
+
   const save = async () => {
     if (!form.title.trim()) return;
     setSaving(true);
     const col = type === "book" ? "books" : "articles";
+
+    // Check if already exists
+    const existing = await getDocs(query(collection(db, "users", userId, col), where("title", "==", form.title.trim())));
+    if (!existing.empty) {
+      const existingId = existing.docs[0].id;
+      const existingData = existing.docs[0].data();
+      // If it's a chapter search, still allow creating new chapter
+      if (!isChapter) {
+        if (window.confirm(`"${form.title}" is already in your library. Open the existing log?`)) {
+          navigate(`/entry/${col}/${existingId}`);
+          return;
+        }
+      }
+    }
+
     const ref = await addDoc(collection(db, "users", userId, col), {
       ...form, type, isChapter,
       currentlyReading: false,
