@@ -155,7 +155,7 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
                       </div>
                     </div>
                   ) : (
-                    <span style={{ fontStyle: note.type === "quote" ? "italic" : "normal", fontSize: 16 }}>{note.text}</span>
+                    <span style={{ fontStyle: note.type === "quote" ? "italic" : "normal", fontSize: 16, color: note.type === "general" ? "#333" : "#000" }}>{note.text}</span>
                   )}
                 </td>
                 <td style={{ textAlign: "right" }}>
@@ -169,7 +169,7 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
             <tr className="add-row">
               <td className="pg-col">
                 <input ref={pageRef} value={page} onChange={e => setPage(e.target.value)}
-                  placeholder="pg" style={{ width: 38, fontSize: 13 }}
+                  placeholder="pg (opt.)" style={{ width: 60, fontSize: 12 }}
                   onKeyDown={e => { if (e.key === "Tab") { e.preventDefault(); textRef.current?.focus(); } }} />
               </td>
               <td>
@@ -177,6 +177,7 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
                   style={{ width: 46, fontSize: 12, padding: "2px 2px" }}>
                   <option value="quote">q</option>
                   <option value="note">n</option>
+                  <option value="general">g</option>
                 </select>
               </td>
               <td>
@@ -193,7 +194,7 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
         </table>
 
         <div className="mono" style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
-          tab: pg → text &nbsp;|&nbsp; enter: save &nbsp;|&nbsp; shift+enter: new line
+          pg is optional &nbsp;|&nbsp; q = quote, n = note, g = general &nbsp;|&nbsp; enter to save &nbsp;|&nbsp; shift+enter for new line
         </div>
 
         {notes.length === 0 && (
