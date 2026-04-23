@@ -109,3 +109,20 @@ table.plain td { border-bottom: 1px solid #f0f0f0; padding: 4px 0; vertical-alig
 .u-yes { background: #f5fff5; }
 .u-no { background: #fff5f5; }
 .add-row { background: #fffde8; }
+
+.stamp {
+  display: inline-block;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 1px solid #000;
+  padding: 1px 5px;
+  margin-left: 8px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+.stamp-book { border-color: #000; color: #000; }
+.stamp-article { border-color: #555; color: #555; }
