@@ -77,25 +77,27 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
           </div>
           {entries.map(entry => (
             <div key={entry.id}>
-              <div style={{ padding: "3px 0", borderBottom: "1px solid #f0f0f0", display: "flex", alignItems: "baseline", gap: 6 }}>
-                <span className="mono" style={{ cursor: "pointer", userSelect: "none" }}
-                  onClick={() => setExpanded(p => ({ ...p, [entry.id]: !p[entry.id] }))}>
-                  {expanded[entry.id] ? "▼" : "▶"}
-                </span>
-                <span>
-                  <a onClick={() => onOpenSession(entry.id, entry.col)}
-                    style={{ fontStyle: "italic", fontSize: 16 }}>{getTitle(entry)}</a>
-                  <span className="mono" style={{ color: "#555" }}> — {entry.author}</span>
-                  {entry.col === "articles" && <span className="mono" style={{ color: "#555" }}> — article</span>}
-                  <span className="mono" style={{ color: entry.useful === true ? "green" : entry.useful === false ? "#c00" : "#999" }}>
-                    {usefulLabel(entry.useful)}
+              <div style={{ padding: "6px 0 4px", borderBottom: "1px solid #eee" }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                  <span className="mono" style={{ cursor: "pointer", userSelect: "none", flexShrink: 0 }}
+                    onClick={() => setExpanded(p => ({ ...p, [entry.id]: !p[entry.id] }))}>
+                    {expanded[entry.id] ? "▼" : "▶"}
                   </span>
-                </span>
-                <span style={{ marginLeft: "auto" }}>
-                  <a className="mono" style={{ fontSize: 12 }} onClick={() => onViewDetail(entry.id, entry.col)}>
-                    [full log]
+                  <a onClick={() => onOpenSession(entry.id, entry.col)}
+                    style={{ fontStyle: entry.col === "books" ? "italic" : "normal", fontSize: 17, lineHeight: 1.3 }}>
+                    {entry.col === "articles" ? `"${getTitle(entry)}"` : getTitle(entry)}
                   </a>
-                </span>
+                </div>
+                <div style={{ paddingLeft: 18, marginTop: 2, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  <span className="mono" style={{ fontSize: 13, color: "#555" }}>
+                    {entry.author}
+                    {entry.col === "articles" && <span style={{ color: "#888" }}> — article</span>}
+                    {entry.useful === true && <span style={{ color: "green" }}> — [useful]</span>}
+                    {entry.useful === false && <span style={{ color: "#c00" }}> — [not useful]</span>}
+                  </span>
+                  <a className="mono" style={{ fontSize: 12, flexShrink: 0, marginLeft: 12 }}
+                    onClick={() => onViewDetail(entry.id, entry.col)}>[full log]</a>
+                </div>
               </div>
 
               {expanded[entry.id] && (
