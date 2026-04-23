@@ -171,7 +171,7 @@ export default function Library({ userId, onOpenSession, onViewDetail }) {
                 {visibleArticles.map(article => (
                   <tr key={article.id}>
                     <td style={{ fontSize: 16 }}>
-                      <a onClick={() => onViewDetail(article.id, article.col)} style={{ fontStyle: "italic" }}>{article.title}</a>
+                      <a onClick={() => onViewDetail(article.id, article.col)} style={{ fontStyle: "normal" }}>"{article.title}"</a>
                       {article.publication && <span className="mono" style={{ fontSize: 12, color: "#888" }}> — {article.publication}</span>}
                     </td>
                     <td className="mono" style={{ fontSize: 13, color: "#555" }}>{article.author}</td>
