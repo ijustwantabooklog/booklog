@@ -114,7 +114,7 @@ export default function ReadingSession({ entryId, entryType, userId, onBack, onV
           <div>
             <span className="mono" style={{ cursor: "pointer" }} onClick={onBack}>← back</span>
             <span className="mono" style={{ margin: "0 8px", color: "#ccc" }}>|</span>
-            <span style={{ fontStyle: "italic", fontSize: 20, fontWeight: "bold" }}>{title}</span>
+            <span style={{ fontStyle: entryType === "books" ? "italic" : "normal", fontSize: 20, fontWeight: "bold" }}>{entryType === "articles" ? `"${title}"` : title}</span>
             {entry.author && <span className="mono" style={{ color: "#555", marginLeft: 8 }}>{entry.author}</span>}
           </div>
           <span className="mono" style={{ cursor: "pointer", color: "#00c", textDecoration: "underline" }}
