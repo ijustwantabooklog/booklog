@@ -70,9 +70,16 @@ export default function App() {
   return (
     <div>
       {/* Header */}
-      <div style={{ background: "#000", color: "#fff", padding: "10px 20px", textAlign: "center", borderBottom: "2px solid #666" }}>
-        <div style={{ fontStyle: "italic", fontSize: 20, fontFamily: "Times New Roman, serif" }}>Reading Archive</div>
-        <div className="mono" style={{ fontSize: 12, color: "#ccc", marginTop: 2 }}>{username}</div>
+      <div style={{ borderBottom: "1px solid #000", padding: "24px 20px 16px", textAlign: "center" }}>
+        <div style={{ fontFamily: "Times New Roman, serif", fontSize: 32, fontWeight: "bold", letterSpacing: 1, marginBottom: 4 }}>
+          Reading Archive
+        </div>
+        <div style={{ fontFamily: "Times New Roman, serif", fontStyle: "italic", fontSize: 16, color: "#333", marginBottom: 4 }}>
+          a personal research journal
+        </div>
+        <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 12, color: "#888", textTransform: "uppercase", letterSpacing: 2 }}>
+          {username}
+        </div>
       </div>
 
       {/* Body: sidebar + content */}
