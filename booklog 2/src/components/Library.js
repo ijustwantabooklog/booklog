@@ -89,6 +89,7 @@ export default function Library({ userId, onOpenSession, onViewDetail }) {
                   <tr>
                     <td style={{ fontSize: 16 }}>
                       <a onClick={() => onViewDetail(book.id, book.col)} style={{ fontStyle: "italic" }}>{book.title}</a>
+                      <span className="stamp stamp-book">book</span>
                       {book.currentlyReading && <span className="mono" style={{ fontSize: 12, color: "#888" }}> [reading]</span>}
                     </td>
                     <td className="mono" style={{ fontSize: 13, color: "#555" }}>{book.author}</td>
@@ -172,6 +173,7 @@ export default function Library({ userId, onOpenSession, onViewDetail }) {
                   <tr key={article.id}>
                     <td style={{ fontSize: 16 }}>
                       <a onClick={() => onViewDetail(article.id, article.col)} style={{ fontStyle: "normal" }}>"{article.title}"</a>
+                      <span className="stamp stamp-article">article</span>
                       {article.publication && <span className="mono" style={{ fontSize: 12, color: "#888" }}> — {article.publication}</span>}
                     </td>
                     <td className="mono" style={{ fontSize: 13, color: "#555" }}>{article.author}</td>
