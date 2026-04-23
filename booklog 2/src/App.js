@@ -77,9 +77,7 @@ export default function App() {
         <div style={{ fontFamily: "Times New Roman, serif", fontStyle: "italic", fontSize: 16, color: "#333", marginBottom: 4 }}>
           a personal research journal
         </div>
-        <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 12, color: "#888", textTransform: "uppercase", letterSpacing: 2 }}>
-          {username}
-        </div>
+
       </div>
 
       {/* Body: sidebar + content */}
