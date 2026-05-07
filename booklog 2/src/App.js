@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { auth, provider, db } from "./firebase";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { BrowserRouter, Routes, Route, NavLink, useNavigate, useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, NavLink, useParams } from "react-router-dom";
 import "./index.css";
 import Journal from "./components/Journal";
 import Library from "./components/Library";
@@ -52,6 +52,8 @@ export default function App() {
 }
 
 function Layout({ username, userId }) {
+  const [selectedEntry, setSelectedEntry] = useState(null); // { id, col }
+
   return (
     <div>
       {/* Header */}
@@ -96,18 +98,46 @@ function Layout({ username, userId }) {
         </div>
 
         {/* Main content */}
-        <div style={{ flex: 1, overflow: "auto" }}>
+        <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
           <Routes>
             <Route path="/" element={
-              <>
-                <AddEntry userId={userId}
-                  onCancel={() => {}}
-                  onSave={(id, type) => window.location.href = `/session/${type}/${id}`} />
-                <hr style={{ margin: "0 20px", borderColor: "#ccc" }} />
-                <Journal userId={userId}
-                  onOpenSession={(id, type) => window.location.href = `/session/${type}/${id}`}
-                  onViewDetail={(id, type) => window.location.href = `/entry/${type}/${id}`} />
-              </>
+              <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+                {/* Left: add form + journal */}
+                <div style={{ flex: 1, overflow: "auto", borderRight: selectedEntry ? "1px solid #ccc" : "none" }}>
+                  <AddEntry userId={userId}
+                    onCancel={() => {}}
+                    onSave={(id, type) => window.location.href = `/session/${type}/${id}`} />
+                  <hr style={{ margin: "0 20px", borderColor: "#ccc" }} />
+                  <Journal
+                    userId={userId}
+                    selectedEntryId={selectedEntry?.id}
+                    onSelectEntry={(id, col) => setSelectedEntry({ id, col })}
+                    onOpenSession={(id, type) => window.location.href = `/session/${type}/${id}`}
+                    onViewDetail={(id, type) => window.location.href = `/entry/${type}/${id}`}
+                  />
+                </div>
+
+                {/* Right: entry detail panel */}
+                {selectedEntry && (
+                  <div style={{ width: 420, flexShrink: 0, overflow: "auto", padding: "12px 0" }}>
+                    <div style={{ padding: "0 16px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontFamily: "Arial, sans-serif", fontSize: 12, color: "#888" }}>entry log</span>
+                      <span onClick={() => setSelectedEntry(null)}
+                        style={{ cursor: "pointer", fontFamily: "Arial, sans-serif", fontSize: 12, color: "#00c", textDecoration: "underline" }}>
+                        [close]
+                      </span>
+                    </div>
+                    <EntryDetail
+                      entryId={selectedEntry.id}
+                      entryType={selectedEntry.col}
+                      userId={userId}
+                      onBack={() => setSelectedEntry(null)}
+                      onOpenSession={(id, type) => window.location.href = `/session/${type}/${id}`}
+                      embedded={true}
+                    />
+                  </div>
+                )}
+              </div>
             } />
             <Route path="/library" element={
               <Library userId={userId}
