@@ -62,22 +62,26 @@ export default function AddEntry({ userId, onCancel, onSave }) {
 
   const pick = (r) => { setForm(f => ({ ...f, ...r })); setResults([]); setSearch(""); };
 
-  const navigate = useNavigate();
+  const resetForm = () => {
+    setForm({ title: "", author: "", year: "", coverUrl: "", publication: "", datePublished: "", url: "", chapterTitle: "", chapterNumber: "", translator: "" });
+    setSearch("");
+    setResults([]);
+    setType("book");
+    setIsChapter(false);
+  };
 
   const save = async () => {
     if (!form.title.trim()) return;
     setSaving(true);
     const col = type === "book" ? "books" : "articles";
 
-    // Check if already exists
     const existing = await getDocs(query(collection(db, "users", userId, col), where("title", "==", form.title.trim())));
     if (!existing.empty) {
       const existingId = existing.docs[0].id;
-      const existingData = existing.docs[0].data();
-      // If it's a chapter search, still allow creating new chapter
       if (!isChapter) {
         if (window.confirm(`"${form.title}" is already in your library. Open the existing log?`)) {
-          navigate(`/entry/${col}/${existingId}`);
+          setSaving(false);
+          onSave(existingId, col);
           return;
         }
       }
@@ -90,12 +94,13 @@ export default function AddEntry({ userId, onCancel, onSave }) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
+    setSaving(false);
     onSave(ref.id, col);
   };
 
   return (
     <div className="wrap" style={{ maxWidth: 680 }}>
-      <h1 style={{ marginBottom: 10 }}>log a new entry</h1>
+      <h2 style={{ marginBottom: 10, fontFamily: "Times New Roman, serif", fontSize: 20 }}>+ log a new entry</h2>
 
       <div className="mono" style={{ marginBottom: 10, fontSize: 13 }}>
         type:{" "}
@@ -172,7 +177,6 @@ export default function AddEntry({ userId, onCancel, onSave }) {
         <button className="primary" onClick={save} disabled={saving}>
           {saving ? "saving..." : "save and start reading session →"}
         </button>
-        <button onClick={onCancel}>cancel</button>
       </div>
     </div>
   );
