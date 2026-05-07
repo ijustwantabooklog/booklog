@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
-import { collection, query, orderBy, onSnapshot, collectionGroup } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 
-export default function Journal({ userId, onOpenSession, onViewDetail }) {
+export default function Journal({ userId, onOpenSession, onViewDetail, onSelectEntry, selectedEntryId }) {
   const [books, setBooks] = useState([]);
   const [articles, setArticles] = useState([]);
   const [noteCounts, setNoteCounts] = useState({});
@@ -18,16 +18,14 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
     return () => { u1(); u2(); };
   }, [userId]);
 
-  // Load note counts whenever entries change
   useEffect(() => {
     const allEntries = [...books, ...articles];
     if (allEntries.length === 0) return;
     const unsubs = allEntries.map(entry => {
-      const unsub = onSnapshot(
+      return onSnapshot(
         query(collection(db, "users", userId, entry.col, entry.id, "notes"), orderBy("createdAt", "asc")),
         snap => setNoteCounts(prev => ({ ...prev, [entry.id]: snap.size }))
       );
-      return unsub;
     });
     return () => unsubs.forEach(u => u());
   }, [books.length, articles.length, userId]);
@@ -60,7 +58,6 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
 
   const getTitle = (e) => e.isChapter && e.chapterTitle ? `${e.chapterTitle} [ch. of ${e.title}]` : e.title;
 
-  // This month stats
   const now = new Date();
   const thisMonth = now.getMonth();
   const thisYear = now.getFullYear();
@@ -77,7 +74,6 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
   return (
     <div className="wrap">
 
-      {/* This month stats */}
       {!loading && (monthBooks > 0 || monthArticles > 0) && (
         <div style={{ border: "1px solid #ccc", padding: "8px 12px", marginBottom: 20, background: "#fafafa", fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13 }}>
           <span style={{ fontWeight: "bold", marginRight: 12 }}>{monthName}</span>
@@ -89,103 +85,9 @@ export default function Journal({ userId, onOpenSession, onViewDetail }) {
 
       {loading && <p className="mono">loading...</p>}
       {!loading && groups.length === 0 && (
-        <p style={{ fontStyle: "italic", color: "#555" }}>Nothing logged yet. Click [+ new entry] to start.</p>
+        <p style={{ fontStyle: "italic", color: "#555" }}>Nothing logged yet. Add an entry above to start.</p>
       )}
 
       {groups.map(({ label, entries }) => {
         const isToday = label.startsWith("Today");
-        const bCount = entries.filter(e => e.col === "books").length;
-        const aCount = entries.filter(e => e.col === "articles").length;
-        const totalNotes = entries.reduce((sum, e) => sum + (noteCounts[e.id] || 0), 0);
-        const parts = [];
-        if (bCount > 0) parts.push(`${bCount} ${bCount === 1 ? "book" : "books"}`);
-        if (aCount > 0) parts.push(`${aCount} ${aCount === 1 ? "article" : "articles"}`);
-        if (totalNotes > 0) parts.push(`${totalNotes} ${totalNotes === 1 ? "note" : "notes"}`);
-
-        return (
-          <div key={label} style={{ marginBottom: 24, ...(isToday ? { background: "#fff9a0", border: "1px solid #000", padding: "8px 10px" } : {}) }}>
-            <div className="day-head" style={{ fontSize: isToday ? 16 : 13, borderBottom: isToday ? "2px solid #000" : "1px dotted #999", marginBottom: isToday ? 8 : 4 }}>
-              {label}
-              <span style={{ fontWeight: "normal", color: isToday ? "#555" : "#aaa", marginLeft: 10, fontSize: 12 }}>
-                {parts.join(", ")}
-              </span>
-            </div>
-
-            {entries.map(entry => {
-              const noteCount = noteCounts[entry.id] || 0;
-              return (
-                <div key={entry.id}>
-                  <div style={{ padding: "6px 0 4px", borderBottom: "1px solid #eee" }}>
-                    <div style={{ lineHeight: 1.4 }}>
-                      <a onClick={() => onOpenSession(entry.id, entry.col)}
-                        style={{ fontStyle: entry.col === "books" ? "italic" : "normal", fontSize: 17 }}>
-                        {entry.col === "articles" ? `"${getTitle(entry)}"` : getTitle(entry)}
-                      </a>
-                      {" "}
-                      <span className={entry.col === "books" ? "stamp stamp-book" : "stamp stamp-article"}>
-                        {entry.col === "books" ? "book" : "article"}
-                      </span>
-                    </div>
-                    <div style={{ marginTop: 2, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <span style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, color: "#555" }}>
-                        {entry.author}
-                        {noteCount > 0 && <span style={{ color: "#888" }}> — {noteCount} {noteCount === 1 ? "note" : "notes"}</span>}
-                        {entry.useful === true && <span style={{ color: "green" }}> — [useful]</span>}
-                        {entry.useful === false && <span style={{ color: "#c00" }}> — [not useful]</span>}
-                        {entry.updatedAt?.toDate && (
-                          <span style={{ color: "#aaa" }}> — {entry.updatedAt.toDate().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }).toLowerCase()}</span>
-                        )}
-                      </span>
-                      <span style={{ display: "flex", gap: 10, flexShrink: 0, marginLeft: 12 }}>
-                        <a style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 12 }}
-                          onClick={() => onViewDetail(entry.id, entry.col)}>[full log]</a>
-                        <a style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 12 }}
-                          onClick={() => setExpanded(p => ({ ...p, [entry.id]: !p[entry.id] }))}>
-                          {expanded[entry.id] ? "[−]" : "[+]"}
-                        </a>
-                      </span>
-                    </div>
-                  </div>
-
-                  {expanded[entry.id] && (
-                    <EntryNotes userId={userId} entryId={entry.id} entryCol={entry.col} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function EntryNotes({ userId, entryId, entryCol }) {
-  const [notes, setNotes] = useState([]);
-  useEffect(() => {
-    return onSnapshot(
-      query(collection(db, "users", userId, entryCol, entryId, "notes"), orderBy("createdAt", "asc")),
-      snap => setNotes(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-    );
-  }, [userId, entryId, entryCol]);
-
-  if (notes.length === 0) return (
-    <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 12, color: "#888", padding: "4px 0 4px 12px" }}>no notes yet</div>
-  );
-
-  return (
-    <div style={{ borderLeft: "2px solid #ccc", marginLeft: 6, marginBottom: 4 }}>
-      {notes.filter(n => n.type !== "general").map(note => (
-        <div key={note.id} style={{ padding: "3px 8px", borderBottom: "1px solid #f5f5f5", display: "flex", gap: 10 }}>
-          <span style={{ fontFamily: "Arial, Helvetica, sans-serif", color: "#aaa", minWidth: 32, textAlign: "right", fontSize: 12, flexShrink: 0 }}>{note.page || "—"}</span>
-          <span style={{ fontStyle: note.type === "quote" ? "italic" : "normal", fontSize: 14 }}>{note.text}</span>
-        </div>
-      ))}
-      {notes.filter(n => n.type === "general").map(note => (
-        <div key={note.id} style={{ padding: "3px 8px", borderBottom: "1px solid #f5f5f5", fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, color: "#555", fontStyle: "italic" }}>
-          {note.text}
-        </div>
-      ))}
-    </div>
-  );
-}
+        const bCount = entries.filter(e
