@@ -90,4 +90,116 @@ export default function Journal({ userId, onOpenSession, onViewDetail, onSelectE
 
       {groups.map(({ label, entries }) => {
         const isToday = label.startsWith("Today");
-        const bCount = entries.filter(e
+        const bCount = entries.filter(e => e.col === "books").length;
+        const aCount = entries.filter(e => e.col === "articles").length;
+        const totalNotes = entries.reduce((sum, e) => sum + (noteCounts[e.id] || 0), 0);
+        const parts = [];
+        if (bCount > 0) parts.push(`${bCount} ${bCount === 1 ? "book" : "books"}`);
+        if (aCount > 0) parts.push(`${aCount} ${aCount === 1 ? "article" : "articles"}`);
+        if (totalNotes > 0) parts.push(`${totalNotes} ${totalNotes === 1 ? "note" : "notes"}`);
+
+        return (
+          <div key={label} style={{ marginBottom: 24, ...(isToday ? { background: "#fff9a0", border: "1px solid #000", padding: "8px 10px" } : {}) }}>
+            <div className="day-head" style={{ fontSize: isToday ? 16 : 13, borderBottom: isToday ? "2px solid #000" : "1px dotted #999", marginBottom: isToday ? 8 : 4 }}>
+              {label}
+              <span style={{ fontWeight: "normal", color: isToday ? "#555" : "#aaa", marginLeft: 10, fontSize: 12 }}>
+                {parts.join(", ")}
+              </span>
+            </div>
+
+            {entries.map(entry => {
+              const noteCount = noteCounts[entry.id] || 0;
+              const isSelected = selectedEntryId === entry.id;
+
+              return (
+                <div key={entry.id}>
+                  <div
+                    onClick={() => onSelectEntry && onSelectEntry(entry.id, entry.col)}
+                    style={{
+                      padding: "6px 0 4px",
+                      borderBottom: "1px solid #eee",
+                      cursor: "pointer",
+                      background: isSelected ? "#eef4ff" : "transparent",
+                      transition: "background 0.1s",
+                    }}
+                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "#f5f5f5"; }}
+                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <div style={{ lineHeight: 1.4 }}>
+                      
+                        onClick={ev => { ev.stopPropagation(); onOpenSession(entry.id, entry.col); }}
+                        style={{ fontStyle: entry.col === "books" ? "italic" : "normal", fontSize: 17 }}>
+                        {entry.col === "articles" ? `"${getTitle(entry)}"` : getTitle(entry)}
+                      </a>
+                      {" "}
+                      <span className={entry.col === "books" ? "stamp stamp-book" : "stamp stamp-article"}>
+                        {entry.col === "books" ? "book" : "article"}
+                      </span>
+                    </div>
+                    <div style={{ marginTop: 2, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <span style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, color: "#555" }}>
+                        {entry.author}
+                        {noteCount > 0 && <span style={{ color: "#888" }}> — {noteCount} {noteCount === 1 ? "note" : "notes"}</span>}
+                        {entry.useful === true && <span style={{ color: "green" }}> — [useful]</span>}
+                        {entry.useful === false && <span style={{ color: "#c00" }}> — [not useful]</span>}
+                        {entry.updatedAt?.toDate && (
+                          <span style={{ color: "#aaa" }}> — {entry.updatedAt.toDate().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }).toLowerCase()}</span>
+                        )}
+                      </span>
+                      <span style={{ display: "flex", gap: 10, flexShrink: 0, marginLeft: 12 }}>
+                        
+                          style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 12 }}
+                          onClick={ev => { ev.stopPropagation(); onViewDetail(entry.id, entry.col); }}>
+                          [full log]
+                        </a>
+                        
+                          style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 12 }}
+                          onClick={ev => { ev.stopPropagation(); setExpanded(p => ({ ...p, [entry.id]: !p[entry.id] })); }}>
+                          {expanded[entry.id] ? "[−]" : "[+]"}
+                        </a>
+                      </span>
+                    </div>
+                  </div>
+
+                  {expanded[entry.id] && (
+                    <EntryNotes userId={userId} entryId={entry.id} entryCol={entry.col} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function EntryNotes({ userId, entryId, entryCol }) {
+  const [notes, setNotes] = useState([]);
+  useEffect(() => {
+    return onSnapshot(
+      query(collection(db, "users", userId, entryCol, entryId, "notes"), orderBy("createdAt", "asc")),
+      snap => setNotes(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    );
+  }, [userId, entryId, entryCol]);
+
+  if (notes.length === 0) return (
+    <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: 12, color: "#888", padding: "4px 0 4px 12px" }}>no notes yet</div>
+  );
+
+  return (
+    <div style={{ borderLeft: "2px solid #ccc", marginLeft: 6, marginBottom: 4 }}>
+      {notes.filter(n => n.type !== "general").map(note => (
+        <div key={note.id} style={{ padding: "3px 8px", borderBottom: "1px solid #f5f5f5", display: "flex", gap: 10 }}>
+          <span style={{ fontFamily: "Arial, Helvetica, sans-serif", color: "#aaa", minWidth: 32, textAlign: "right", fontSize: 12, flexShrink: 0 }}>{note.page || "—"}</span>
+          <span style={{ fontStyle: note.type === "quote" ? "italic" : "normal", fontSize: 14 }}>{note.text}</span>
+        </div>
+      ))}
+      {notes.filter(n => n.type === "general").map(note => (
+        <div key={note.id} style={{ padding: "3px 8px", borderBottom: "1px solid #f5f5f5", fontFamily: "Arial, Helvetica, sans-serif", fontSize: 13, color: "#555", fontStyle: "italic" }}>
+          {note.text}
+        </div>
+      ))}
+    </div>
+  );
+}
