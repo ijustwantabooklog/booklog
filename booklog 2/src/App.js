@@ -52,8 +52,6 @@ export default function App() {
 }
 
 function Layout({ username, userId }) {
-  const navigate = useNavigate ? useNavigate() : null;
-
   return (
     <div>
       {/* Header */}
@@ -89,11 +87,6 @@ function Layout({ username, userId }) {
               Actions
             </div>
             <div style={{ padding: "2px 4px" }}>
-              <NavLink to="/add" style={{ fontSize: 15, color: "#00c", textDecoration: "underline", fontFamily: "Times New Roman, serif" }}>
-                + new entry
-              </NavLink>
-            </div>
-            <div style={{ padding: "2px 4px" }}>
               <span onClick={() => signOut(auth)}
                 style={{ fontSize: 15, color: "#00c", textDecoration: "underline", cursor: "pointer", fontFamily: "Times New Roman, serif" }}>
                 sign out
@@ -106,9 +99,15 @@ function Layout({ username, userId }) {
         <div style={{ flex: 1, overflow: "auto" }}>
           <Routes>
             <Route path="/" element={
-              <Journal userId={userId}
-                onOpenSession={(id, type) => window.location.href = `/session/${type}/${id}`}
-                onViewDetail={(id, type) => window.location.href = `/entry/${type}/${id}`} />
+              <>
+                <AddEntry userId={userId}
+                  onCancel={() => {}}
+                  onSave={(id, type) => window.location.href = `/session/${type}/${id}`} />
+                <hr style={{ margin: "0 20px", borderColor: "#ccc" }} />
+                <Journal userId={userId}
+                  onOpenSession={(id, type) => window.location.href = `/session/${type}/${id}`}
+                  onViewDetail={(id, type) => window.location.href = `/entry/${type}/${id}`} />
+              </>
             } />
             <Route path="/library" element={
               <Library userId={userId}
@@ -118,11 +117,6 @@ function Layout({ username, userId }) {
             <Route path="/projects" element={
               <Projects userId={userId}
                 onViewDetail={(id, type) => window.location.href = `/entry/${type}/${id}`} />
-            } />
-            <Route path="/add" element={
-              <AddEntry userId={userId}
-                onCancel={() => window.history.back()}
-                onSave={(id, type) => window.location.href = `/session/${type}/${id}`} />
             } />
             <Route path="/session/:entryType/:entryId" element={
               <SessionPage userId={userId} />
